@@ -52,6 +52,7 @@ export interface Poi {
 // Loose itinerary shape — the backend assembles every agent's slice here.
 export interface Itinerary {
   summary?: string;
+  currency?: { code: string; symbol: string };
   preferences?: Record<string, unknown>;
   destination?: {
     name?: string;

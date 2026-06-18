@@ -1,18 +1,57 @@
-"""Finalize: assemble the merged itinerary + a natural-language summary."""
+"""Finalize: convert costs to the traveler's local currency, assemble the
+merged itinerary, and write a natural-language answer (the chatbot reply)."""
 from __future__ import annotations
 
 from typing import Any, Dict
 
 from ...llm import llm_text
 from ...state import TravelState, event
+from ...tools.fx_tool import symbol as fx_symbol
+from ...tools.fx_tool import usd_to
+
+
+def _convert_money(it: Dict[str, Any], rate: float) -> None:
+    """Multiply every USD cost field in-place by `rate` (rounded to integer)."""
+    def cv(v):
+        return round(v * rate) if isinstance(v, (int, float)) else v
+
+    flights = it.get("flights") or {}
+    for opt in flights.get("options", []) or []:
+        opt["total_price"] = cv(opt.get("total_price"))
+    if flights.get("cheapest"):
+        flights["cheapest"]["total_price"] = cv(flights["cheapest"].get("total_price"))
+
+    hotels = it.get("hotels") or {}
+    for opt in hotels.get("options", []) or []:
+        opt["total_price"] = cv(opt.get("total_price"))
+        opt["nightly_rate"] = cv(opt.get("nightly_rate"))
+    if hotels.get("best_value"):
+        hotels["best_value"]["total_price"] = cv(hotels["best_value"].get("total_price"))
+        hotels["best_value"]["nightly_rate"] = cv(hotels["best_value"].get("nightly_rate"))
+
+    acts = it.get("activities") or {}
+    if "estimated_cost" in acts:
+        acts["estimated_cost"] = cv(acts.get("estimated_cost"))
+
+    b = it.get("budget") or {}
+    if b.get("breakdown"):
+        b["breakdown"] = {k: cv(v) for k, v in b["breakdown"].items()}
+    for key in ("total", "target", "remaining"):
+        if b.get(key) is not None:
+            b[key] = cv(b[key])
 
 
 def finalize(state: TravelState) -> Dict[str, Any]:
     prefs = state.get("preferences", {})
     dest = prefs.get("destination", "your destination")
-    budget = state.get("budget", {})
+    geo = state.get("destination", {}).get("geo", {})
 
-    itinerary = {
+    # ---- decide display currency: user hint > destination currency > USD ----
+    code = (prefs.get("currency_hint") or geo.get("currency_code") or "USD").upper()
+    sym = geo.get("currency_symbol") or fx_symbol(code)
+    rate = usd_to(code)
+
+    itinerary: Dict[str, Any] = {
         "preferences": prefs,
         "destination": state.get("destination", {}),
         "weather": state.get("weather", {}),
@@ -20,22 +59,42 @@ def finalize(state: TravelState) -> Dict[str, Any]:
         "hotels": state.get("hotels", {}),
         "activities": state.get("activities", {}),
         "logistics": state.get("logistics", {}),
-        "budget": budget,
+        "budget": state.get("budget", {}),
         "critic": state.get("critic", {}),
+        "currency": {"code": code, "symbol": sym},
     }
+    _convert_money(itinerary, rate)
+
+    budget = itinerary.get("budget", {})
+    total = budget.get("total", 0)
+    target = budget.get("target")
+    money = f"{sym}{total:,.0f}"
+    target_str = f" against a {sym}{target:,.0f} budget" if target else ""
 
     fallback = (
-        f"Your {prefs.get('nights')}-night trip to {dest} is ready. "
-        f"Estimated cost ${budget.get('total', 0):.0f}"
-        + (f" against a ${budget['target']:.0f} budget" if budget.get("target") else "")
-        + ". See the breakdown and day-by-day plan below."
+        f"Here's your {prefs.get('nights')}-night trip to {dest}. "
+        f"Estimated total cost is {money}{target_str}. "
+        f"{state.get('weather', {}).get('summary', '')} "
+        f"The plan below covers flights, where to stay, a day-by-day schedule, and local tips. "
+        f"Flight fares and room rates are estimates."
     )
+
     summary = llm_text(
-        "Write a friendly 3-4 sentence summary of this trip plan for the traveler. "
-        f"Destination: {dest}. Nights: {prefs.get('nights')}. "
-        f"Total cost: ${budget.get('total')}. Target: {budget.get('target')}. "
-        f"Highlights: {state.get('destination', {}).get('highlights')}. "
-        f"Weather: {state.get('weather', {}).get('summary')}.",
+        "Write a warm, helpful 4-6 sentence trip summary for the traveler, like a "
+        "concierge replying in chat. Use the local currency symbol provided. Cover: the "
+        "destination's appeal, the weather to expect, the flight, where to stay, the kind "
+        "of activities planned, and whether it fits the budget.\n"
+        f"Destination: {dest}\n"
+        f"Nights: {prefs.get('nights')}, Travelers: {prefs.get('travelers')}\n"
+        f"Currency symbol: {sym} ({code})\n"
+        f"Total cost: {sym}{total:,.0f}; Budget: {(sym + format(target, ',.0f')) if target else 'not specified'}\n"
+        f"Over budget: {budget.get('over_budget')}\n"
+        f"Highlights: {state.get('destination', {}).get('highlights')}\n"
+        f"Weather: {state.get('weather', {}).get('summary')}\n"
+        f"Flight: {state.get('flights', {}).get('summary')}\n"
+        f"Hotel: {state.get('hotels', {}).get('summary')}\n"
+        f"Logistics: {state.get('logistics', {}).get('summary')}\n"
+        "Note that flight fares and hotel rates are estimates.",
         fallback=fallback,
     )
     itinerary["summary"] = summary

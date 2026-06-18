@@ -13,6 +13,7 @@ from typing import Any, Dict
 
 from ...llm import llm_json
 from ...state import TravelState, event
+from ...tools.fx_tool import SYMBOL_TO_CODE, to_usd
 
 # Order matters: destination first (it may *choose* the place), budget last
 # (it needs every other agent's costs), logistics after weather (reuses geo).
@@ -43,13 +44,23 @@ def _heuristic_parse(query: str) -> Dict[str, Any]:
             dest = m.group(1).strip().title()
 
     budget = None
+    currency = None
+    # amount possibly prefixed by a symbol ($/₹/€/£/¥) or suffixed by a code
     m = (
-        re.search(r"\$\s?(\d[\d,]{2,})", q)
-        or re.search(r"budget\s*(?:of\s*|is\s*|around\s*|~\s*)?\$?\s*(\d[\d,]{2,})", q)
-        or re.search(r"(\d[\d,]{2,})\s*(?:usd|dollars)", q)
+        re.search(r"([$₹€£¥])\s?(\d[\d,]{2,})", q)
+        or re.search(r"(rs\.?|inr|usd|eur|gbp|jpy|thb|aed|aud|sgd)\s*(\d[\d,]{2,})", q)
+        or re.search(r"(\d[\d,]{2,})\s*(usd|inr|eur|gbp|jpy|thb|aed|aud|sgd|rs\.?|dollars|rupees)", q)
+        or re.search(r"budget\s*(?:of\s*|is\s*|around\s*|~\s*)?([$₹€£¥])?\s*(\d[\d,]{2,})", q)
     )
     if m:
-        budget = int(m.group(1).replace(",", ""))
+        groups = m.groups()
+        # find the numeric group and any currency token among the groups
+        num = next((g for g in groups if g and g.replace(",", "").isdigit()), None)
+        token = next((g for g in groups if g and not g.replace(",", "").isdigit()), None)
+        if num:
+            budget = int(num.replace(",", ""))
+        if token:
+            currency = SYMBOL_TO_CODE.get(token.strip().lower())
 
     travelers = 1
     m = re.search(r"(\d+)\s*(?:people|persons|travel|adult|pax|guest)", q)
@@ -68,7 +79,8 @@ def _heuristic_parse(query: str) -> Dict[str, Any]:
     return {
         "origin": origin,
         "destination": dest,
-        "budget_usd": budget,
+        "budget": budget,
+        "budget_currency": currency,
         "travelers": travelers,
         "nights": nights,
         "interests": interests,
@@ -80,7 +92,8 @@ def _llm_parse(query: str) -> Dict[str, Any] | None:
     prompt = (
         "Extract structured travel preferences from this request. "
         "Return ONLY JSON with keys: origin (string or null), destination (string or null), "
-        "budget_usd (number or null), travelers (int), nights (int or null), "
+        "budget (number or null), budget_currency (ISO code like USD/INR/EUR or null — "
+        "infer from any symbol/word the user used), travelers (int), nights (int or null), "
         "interests (array of strings), vibe (short string or null).\n\n"
         f"Request: {query}"
     )
@@ -93,7 +106,19 @@ def _normalize(prefs: Dict[str, Any]) -> Dict[str, Any]:
     prefs = dict(prefs or {})
     prefs.setdefault("origin", None)
     prefs.setdefault("destination", None)
-    prefs.setdefault("budget_usd", None)
+
+    # Normalize the budget to USD internally (estimates are USD); remember the
+    # user-typed currency as a display hint. No currency typed → assume USD.
+    cur = prefs.get("budget_currency")
+    if isinstance(cur, str):
+        cur = SYMBOL_TO_CODE.get(cur.strip().lower(), cur.strip().upper())
+    amount = prefs.get("budget")
+    if amount:
+        prefs["budget_usd"] = round(to_usd(float(amount), cur) if cur else float(amount))
+    else:
+        prefs.setdefault("budget_usd", None)
+    prefs["currency_hint"] = cur or None
+
     prefs["travelers"] = int(prefs.get("travelers") or 1)
     prefs["interests"] = prefs.get("interests") or []
     prefs.setdefault("vibe", None)

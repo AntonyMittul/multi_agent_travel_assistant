@@ -13,6 +13,10 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 const ROW = "flex items-center justify-between text-sm";
 
 export default function ItineraryView({ it }: { it: Itinerary }) {
+  const sym = it.currency?.symbol ?? "$";
+  const money = (v: number | undefined | null) =>
+    `${sym}${Math.round(v ?? 0).toLocaleString()}`;
+
   const b = it.budget;
   const total = b?.total ?? 0;
   const target = b?.target ?? null;
@@ -28,8 +32,9 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
             {it.destination?.name ? it.destination.name : "Your itinerary"}
             {it.logistics?.flag ? ` ${it.logistics.flag}` : ""}
           </h2>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">{it.summary}</p>
-          <p className="mt-2 text-xs text-zinc-400">Flight fares and room rates are estimates.</p>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+            {it.summary}
+          </p>
         </section>
       )}
 
@@ -88,19 +93,13 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
                 <div key={i} className={ROW}>
                   <span className="text-zinc-700 dark:text-zinc-300">
                     {f.airline}
-                    {f.depart_time ? (
-                      <span className="text-zinc-500"> · {f.depart_time}</span>
-                    ) : null}
+                    {f.depart_time ? <span className="text-zinc-500"> · {f.depart_time}</span> : null}
                   </span>
-                  <span className="text-zinc-800 dark:text-zinc-200">
-                    ~${f.total_price.toFixed(0)}
-                  </span>
+                  <span className="text-zinc-800 dark:text-zinc-200">~{money(f.total_price)}</span>
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-xs text-zinc-400">
-              {it.flights.source} · prices estimated
-            </p>
+            <p className="mt-2 text-xs text-zinc-400">{it.flights.source} · prices estimated</p>
           </Card>
         )}
 
@@ -114,7 +113,7 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
                     {h.stars ? <span className="text-zinc-500"> · {h.stars}★</span> : null}
                   </span>
                   <span className="whitespace-nowrap text-zinc-800 dark:text-zinc-200">
-                    ~${h.total_price.toFixed(0)}
+                    ~{money(h.total_price)}
                     <span className="text-zinc-500"> /{h.nights}n</span>
                   </span>
                 </div>
@@ -149,14 +148,14 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
               {Object.entries(b.breakdown).map(([k, v]) => (
                 <div key={k} className={ROW}>
                   <span className="capitalize text-zinc-500">{k.replace("_", " ")}</span>
-                  <span className="text-zinc-700 dark:text-zinc-300">${Number(v).toFixed(0)}</span>
+                  <span className="text-zinc-700 dark:text-zinc-300">{money(Number(v))}</span>
                 </div>
               ))}
               <div className="mt-2 flex items-center justify-between border-t border-zinc-200 pt-2 text-sm font-medium dark:border-zinc-800">
                 <span className="text-zinc-700 dark:text-zinc-300">Total</span>
                 <span className={b.over_budget ? "text-red-600 dark:text-red-400" : "text-zinc-900 dark:text-zinc-100"}>
-                  ${total.toFixed(0)}
-                  {target ? <span className="text-zinc-500"> / ${target.toFixed(0)}</span> : null}
+                  {money(total)}
+                  {target ? <span className="text-zinc-500"> / {money(target)}</span> : null}
                 </span>
               </div>
               {target ? (
@@ -169,8 +168,8 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
                   </div>
                   <p className="mt-1 text-xs text-zinc-400">
                     {b.over_budget
-                      ? "Over budget — the critic auto-downgraded tiers to compensate."
-                      : `$${(b.remaining ?? 0).toFixed(0)} under budget.`}
+                      ? "Over budget — the planner auto-downgraded tiers to compensate."
+                      : `${money(b.remaining)} under budget.`}
                   </p>
                 </div>
               ) : null}
@@ -183,7 +182,7 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
             <p className="text-sm text-zinc-600 dark:text-zinc-400">{it.logistics.summary}</p>
             {it.critic?.issues && it.critic.issues.length > 0 && (
               <div className="mt-3 rounded border border-zinc-200 p-2 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-                <span className="font-medium">Critic notes: </span>
+                <span className="font-medium">Notes: </span>
                 {it.critic.issues.join(" ")}
               </div>
             )}

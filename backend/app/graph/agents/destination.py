@@ -8,7 +8,6 @@ from typing import Any, Dict
 from ...llm import llm_json
 from ...state import TravelState, event
 from ...tools.geo_tool import geocode
-from ...tools.geodb_tool import city_facts
 
 _FALLBACK_SUGGEST = {
     "beach": "Bali, Indonesia", "hiking": "Queenstown, New Zealand",
@@ -43,7 +42,6 @@ def destination(state: TravelState) -> Dict[str, Any]:
 
     # ---- real geocoding + annotations (OpenCage) ----
     geo = geocode(dest)
-    facts = city_facts(dest)  # GeoDB: population / region (optional)
 
     # ---- descriptive profile (Gemini, templated fallback) ----
     profile = llm_json(
@@ -60,8 +58,6 @@ def destination(state: TravelState) -> Dict[str, Any]:
         "name": dest,
         "why_chosen": why,
         "geo": geo if geo.get("available") else {},
-        "population": facts.get("population"),
-        "region": facts.get("region"),
         **(profile if isinstance(profile, dict) else {}),
     }
     note = "" if geo.get("available") else f" ({geo.get('summary', 'geocoding unavailable')})"
