@@ -71,6 +71,7 @@ export interface Restaurant {
 export interface Itinerary {
   summary?: string;
   currency?: { code: string; symbol: string };
+  agent_log?: { label: string; detail: string }[];
   preferences?: Record<string, unknown>;
   destination?: {
     name?: string;

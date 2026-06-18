@@ -108,8 +108,48 @@ def finalize(state: TravelState) -> Dict[str, Any]:
         fallback=fallback,
     )
     itinerary["summary"] = summary
+    itinerary["agent_log"] = _build_agent_log(state, sym, total)
 
     return {
         "final_itinerary": itinerary,
         "messages": [event("finalize", "final", summary, {"itinerary": itinerary})],
     }
+
+
+def _build_agent_log(state: TravelState, sym: str, total: float):
+    """A clean, human-readable record of what each agent did (for the UI panel)."""
+    prefs = state.get("preferences", {})
+    weather = state.get("weather", {})
+    flights = state.get("flights", {})
+    hotels = state.get("hotels", {})
+    acts = state.get("activities", {})
+    logi = state.get("logistics", {})
+    rev = state.get("revision_count", 0)
+
+    log = [{
+        "label": "Orchestrator",
+        "detail": "Decomposed your request and routed it to specialist agents",
+    }, {
+        "label": "Destination Agent",
+        "detail": f"Selected {prefs.get('destination', 'your destination')}",
+    }]
+    if weather.get("available"):
+        log.append({"label": "Weather Agent", "detail": weather.get("summary", "Analyzed the forecast")})
+    if flights.get("available"):
+        log.append({"label": "Flight Agent",
+                    "detail": f"Searched flights {flights.get('route', '')} ({flights.get('source', '')})"})
+    if hotels.get("available"):
+        log.append({"label": "Hotel Agent",
+                    "detail": f"Reviewed {len(hotels.get('options', []))} hotels and picked "
+                              f"{hotels.get('best_value', {}).get('name', 'the best value')}"})
+    log.append({"label": "Activities Agent",
+                "detail": f"Curated {len(acts.get('pois', []))} attractions and "
+                          f"{len(acts.get('restaurants', []))} restaurants into a "
+                          f"{prefs.get('nights')}-night plan"})
+    if logi.get("available"):
+        log.append({"label": "Logistics Agent", "detail": logi.get("summary", "Gathered local info")})
+    log.append({"label": "Budget Agent", "detail": f"Tallied the trip cost at {sym}{total:,.0f}"})
+    log.append({"label": "Critic Agent",
+                "detail": (f"Adjusted the plan {rev}× to fit the budget, then validated it"
+                           if rev else "Validated the merged plan — all checks passed")})
+    return log

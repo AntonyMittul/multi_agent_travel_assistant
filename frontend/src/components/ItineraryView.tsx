@@ -85,6 +85,32 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
         </section>
       )}
 
+      {it.agent_log && it.agent_log.length > 0 && (
+        <details
+          open
+          className="group rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+        >
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <span className="transition-transform group-open:rotate-90">▸</span>
+            <span>🧠 Agent activity</span>
+            <span className="ml-auto text-xs font-normal text-zinc-400">
+              {it.agent_log.length} steps
+            </span>
+          </summary>
+          <ul className="space-y-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+            {it.agent_log.map((a, i) => (
+              <li key={i} className="flex gap-2 text-sm">
+                <span className="text-green-600 dark:text-green-400">✓</span>
+                <span>
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">{a.label}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400"> — {a.detail}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       {center && (
         <Card title="Map">
           <TripMap center={center} attractions={places} hotels={it.hotels?.options} />
