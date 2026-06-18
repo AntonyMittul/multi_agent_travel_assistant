@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from .config import (AVIATIONSTACK_API_KEY, GEMINI_MODEL, GOOGLE_API_KEY,
@@ -154,6 +154,25 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
         "content": intake.get("lead") or "Here's a plan based on what you told me:",
         "itinerary": final.get("final_itinerary", {}),
     }
+
+
+# ─────────────────────────── PDF export ─────────────────────────────────────
+class ExportRequest(BaseModel):
+    itinerary: Dict[str, Any]
+
+
+@app.post("/api/export")
+def export(req: ExportRequest):
+    from .report import build_pdf
+
+    pdf = build_pdf(req.itinerary)
+    dest = ((req.itinerary.get("destination") or {}).get("name") or "trip").split(",")[0]
+    safe = "".join(c for c in dest if c.isalnum() or c in " -_").strip().replace(" ", "_") or "trip"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="VoyageMind_{safe}.pdf"'},
+    )
 
 
 # ─────────────────────────── streaming plan (legacy) ────────────────────────

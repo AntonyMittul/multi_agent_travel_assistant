@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Itinerary } from "../types";
+import { exportPdf } from "../lib/api";
 import TripMap from "./TripMap";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
@@ -238,6 +239,27 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
   ].filter(Boolean) as { key: string; label: string }[];
 
   const [tab, setTab] = useState("overview");
+  const [downloading, setDownloading] = useState(false);
+
+  async function download() {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const blob = await exportPdf(it);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `VoyageMind_${(it.destination?.name ?? "trip").split(",")[0].replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Sorry, the PDF export failed. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -271,8 +293,8 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
         </section>
       )}
 
-      {/* tab bar */}
-      <div className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
+      {/* tab bar + export */}
+      <div className="flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -287,6 +309,13 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
             {t.label}
           </button>
         ))}
+        <button
+          onClick={download}
+          disabled={downloading}
+          className="ml-auto mb-1 rounded-md border border-blue-600 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-950"
+        >
+          {downloading ? "Preparing…" : "⬇ Download Trip Plan"}
+        </button>
       </div>
 
       {/* tab panels */}

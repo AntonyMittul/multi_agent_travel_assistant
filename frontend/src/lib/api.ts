@@ -1,5 +1,16 @@
 import type { HealthInfo, Itinerary } from "../types";
 
+/** Request a PDF of the trip plan and return it as a Blob. */
+export async function exportPdf(itinerary: Itinerary): Promise<Blob> {
+  const res = await fetch("/api/export", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itinerary }),
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  return res.blob();
+}
+
 export async function getHealth(): Promise<HealthInfo> {
   const res = await fetch("/api/health");
   return res.json();
