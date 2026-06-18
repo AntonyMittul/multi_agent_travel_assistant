@@ -35,6 +35,7 @@ export interface FlightOption {
   arrive_time?: string;
   tier: string;
   total_price: number;
+  per_person?: number;
   price_estimated?: boolean;
 }
 
@@ -95,6 +96,7 @@ export interface Itinerary {
     route?: string;
     distance_km?: number;
     source?: string;
+    per_person?: number;
     cheapest?: FlightOption;
     options?: FlightOption[];
   };

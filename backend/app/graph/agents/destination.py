@@ -41,29 +41,38 @@ def destination(state: TravelState) -> Dict[str, Any]:
             why = "Great all-round destination matching your interests."
         prefs["destination"] = dest
 
-    # ---- real geocoding + annotations (OpenCage) ----
-    geo = geocode(dest)
-
-    # ---- descriptive profile (Gemini, templated fallback) ----
+    # ---- normalize to a real base city + descriptive profile (Gemini) ----
+    # Critical: a broad region/state/island (e.g. "Kashmir") must resolve to the
+    # gateway city ("Srinagar") or geocoding lands on an obscure same-named village.
     profile = llm_json(
-        f"Return JSON about {dest} for a traveler interested in {prefs.get('interests')}: "
-        "{\"best_time\": \"...\", \"highlights\": [\"..\",\"..\",\"..\"], \"blurb\": \"2 sentences\"}.",
+        f"For a trip to '{dest}' (traveler interests: {prefs.get('interests')}), return JSON: "
+        '{"place": "the single best \\"City, Country\\" to base this trip — if the '
+        "destination is already a clear city keep it; if it is a broad region/state/"
+        'island/country pick its main city or tourist gateway", '
+        '"best_time": "...", "highlights": ["..","..",".."], "blurb": "2 sentences"}.',
         fallback={
+            "place": dest,
             "best_time": "Spring and autumn for mild weather.",
             "highlights": ["Old town", "Local cuisine", "Scenic viewpoints"],
             "blurb": f"{dest} offers a memorable mix of sights, food, and culture.",
         },
     )
+    canonical = (profile.get("place") if isinstance(profile, dict) else None) or dest
+    canonical = str(canonical).strip()
+    prefs["destination"] = canonical
+
+    # ---- real geocoding + annotations (OpenCage) on the canonical city ----
+    geo = geocode(canonical)
 
     # hero photo via Wikipedia search
-    image = get_image(geo.get("city") or dest)
+    image = get_image((geo.get("city") if geo.get("available") else None) or canonical)
 
     data = {
-        "name": dest,
+        "name": canonical,
         "why_chosen": why,
         "geo": geo if geo.get("available") else {},
         "image": image,
-        **(profile if isinstance(profile, dict) else {}),
+        **({k: v for k, v in profile.items() if k != "place"} if isinstance(profile, dict) else {}),
     }
     note = "" if geo.get("available") else f" ({geo.get('summary', 'geocoding unavailable')})"
     return {
@@ -71,5 +80,5 @@ def destination(state: TravelState) -> Dict[str, Any]:
         "destination": data,
         "completed_agents": completed,
         "messages": [event("destination", "result",
-                           f"Destination: {dest}.{note} {data.get('blurb', '')}", data)],
+                           f"Destination: {canonical}.{note} {data.get('blurb', '')}", data)],
     }

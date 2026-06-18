@@ -93,22 +93,25 @@ def search_flights(
         if len(options) >= 3:
             break
 
-    source = "AviationStack (live schedule)" if options else "estimate only"
-    if not options:
-        # no live data (no key / unknown route / quota) — synthesize estimate rows
-        for i, label in enumerate(["Direct", "1-stop", "Flexible"]):
-            options.append({
-                "airline": f"Multiple carriers ({label})",
-                "flight_number": "",
-                "depart_time": "",
-                "arrive_time": "",
-                "tier": tier,
-                "total_price": round(fare * travelers * (1 + i * 0.12), 2),
-                "price_estimated": True,
-            })
+    if options:
+        source = "Live schedules via AviationStack · fares estimated"
+    else:
+        # no live data (no key / unknown route / quota) — one clear average estimate
+        per_person = round(fare)
+        avg_total = round(fare * travelers)
+        options = [{
+            "airline": f"Average economy fare ({travelers} traveller(s))",
+            "flight_number": "", "depart_time": "", "arrive_time": "",
+            "tier": tier,
+            "per_person": per_person,
+            "total_price": avg_total,
+            "price_estimated": True,
+        }]
+        source = "Estimated average fare · varies by airline & date"
 
     options.sort(key=lambda x: x["total_price"])
     cheapest = options[0]
+    avg_total = cheapest["total_price"]
     route = f"{(o_air or {}).get('iata', origin_city)}→{(d_air or {}).get('iata', dest_city)}"
     return {
         "available": True,
@@ -118,11 +121,13 @@ def search_flights(
         "distance_km": distance_km,
         "source": source,
         "price_estimated": True,
+        "per_person": round(fare),
+        "price_low": round(avg_total * 0.85),
+        "price_high": round(avg_total * 1.2),
         "options": options,
         "cheapest": cheapest,
         "summary": (
-            f"{cheapest['airline']} {route} from ~${cheapest['total_price']:.0f} total "
-            f"(est.{', ' + str(distance_km) + ' km' if distance_km else ''}). "
-            f"Schedules: {source}."
+            f"~${avg_total:.0f} total / ~${round(fare):.0f} per person, round trip {route}"
+            f"{', ' + str(distance_km) + ' km' if distance_km else ''}. {source}."
         ),
     }

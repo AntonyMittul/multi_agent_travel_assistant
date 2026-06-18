@@ -31,8 +31,11 @@ def _convert_money(it: Dict[str, Any], rate: float) -> None:
 
     flights = it.get("flights") or {}
     for opt in flights.get("options", []) or []:
-        conv(opt, ["total_price"])
-    conv(flights.get("cheapest"), ["total_price"])
+        conv(opt, ["total_price", "per_person"])
+    conv(flights.get("cheapest"), ["total_price", "per_person"])
+    for key in ("per_person", "price_low", "price_high"):
+        if isinstance(flights.get(key), (int, float)):
+            flights[key] = round(flights[key] * rate)
 
     hotels = it.get("hotels") or {}
     for opt in hotels.get("options", []) or []:

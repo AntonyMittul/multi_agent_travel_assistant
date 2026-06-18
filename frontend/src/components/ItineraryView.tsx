@@ -124,7 +124,10 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
           </div>
         ))}
       </div>
-      <p className="mt-2 text-xs text-zinc-400">{it.flights.source} · prices estimated</p>
+      <p className="mt-2 text-xs text-zinc-400">
+        {it.flights.per_person ? `≈ ${money(it.flights.per_person)} per person · ` : ""}
+        {it.flights.source}
+      </p>
     </Card>
   );
 
