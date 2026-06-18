@@ -26,6 +26,21 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
 
   const places = it.activities?.pois ?? [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prefs = (it.preferences ?? {}) as Record<string, any>;
+  const nights = Number(prefs.nights) || it.hotels?.best_value?.nights;
+  const travelers = Number(prefs.travelers);
+  const temp = it.weather?.avg_high_c;
+  const stats = [
+    it.destination?.name && { icon: "📍", value: it.destination.name.split(",")[0], label: "Destination" },
+    nights && { icon: "🗓", value: `${nights + 1}`, label: "Days" },
+    nights && { icon: "🏨", value: `${nights}`, label: "Nights" },
+    travelers && { icon: "👥", value: `${travelers}`, label: travelers > 1 ? "Travelers" : "Traveler" },
+    b?.total != null && { icon: "💰", value: money(b.total), label: "Est. total" },
+    temp != null && { icon: "🌤", value: `${Math.round(temp)}°C`, label: "Avg high" },
+    places.length > 0 && { icon: "📌", value: `${places.length}`, label: "Attractions" },
+  ].filter(Boolean) as { icon: string; value: string; label: string }[];
+
   return (
     <div className="space-y-4">
       {it.summary && (
@@ -46,6 +61,26 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
             <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
               {it.summary}
             </p>
+          </div>
+        </section>
+      )}
+
+      {stats.length > 0 && (
+        <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <h3 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">Trip overview</h3>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {stats.map((s) => (
+              <div
+                key={s.label}
+                className="flex flex-col items-center rounded-md border border-zinc-200 px-2 py-3 text-center dark:border-zinc-800"
+              >
+                <span className="text-xl">{s.icon}</span>
+                <span className="mt-1 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  {s.value}
+                </span>
+                <span className="text-[11px] text-zinc-500">{s.label}</span>
+              </div>
+            ))}
           </div>
         </section>
       )}
