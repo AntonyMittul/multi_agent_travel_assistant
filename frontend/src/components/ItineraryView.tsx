@@ -5,7 +5,7 @@ import TripMap from "./TripMap";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <section className="rounded-xl border border-zinc-200/70 bg-white/70 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
       <h3 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">{title}</h3>
       {children}
     </section>
@@ -213,7 +213,7 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
   );
 
   const agentLog = it.agent_log && it.agent_log.length > 0 && (
-    <details className="group rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <details className="group rounded-xl border border-zinc-200/70 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
         <span className="transition-transform group-open:rotate-90">▸</span>
         <span>🧠 Agent activity</span>
@@ -267,7 +267,7 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
   return (
     <div className="space-y-4">
       {it.summary && (
-        <section className="overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="overflow-hidden rounded-xl border border-zinc-200/70 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
           {it.destination?.image && (
             <img src={it.destination.image} alt={it.destination?.name ?? "destination"} className="h-44 w-full object-cover" loading="lazy" />
           )}
@@ -282,7 +282,7 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
       )}
 
       {stats.length > 0 && (
-        <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="rounded-xl border border-zinc-200/70 bg-white/70 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
           <h3 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">Trip overview</h3>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {stats.map((s) => (
