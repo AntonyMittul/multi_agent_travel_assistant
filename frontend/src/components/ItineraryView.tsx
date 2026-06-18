@@ -87,18 +87,21 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
 
       {center && (
         <Card title="Map">
-          <TripMap center={center} hotels={it.hotels?.options} pois={it.activities?.pois} />
+          <TripMap center={center} attractions={places} hotels={it.hotels?.options} />
         </Card>
       )}
 
       {places.length > 0 && (
         <Card title="Places you'll see">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {places.slice(0, 6).map((p) => (
+            {places.slice(0, 6).map((p, i) => (
               <figure
                 key={p.name}
-                className="overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800"
+                className="relative overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800"
               >
+                <span className="absolute left-2 top-2 z-[1] flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-xs font-semibold text-white shadow">
+                  {i + 1}
+                </span>
                 {p.image ? (
                   <img src={p.image} alt={p.name} className="h-28 w-full object-cover" loading="lazy" />
                 ) : (
