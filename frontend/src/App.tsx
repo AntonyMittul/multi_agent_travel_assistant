@@ -3,6 +3,7 @@ import ItineraryView from "./components/ItineraryView";
 import ThemeToggle from "./components/ThemeToggle";
 import Loader from "./components/Loader";
 import Background from "./components/Background";
+import HeroGlobe from "./components/HeroGlobe";
 import { getHealth, sendChat } from "./lib/api";
 import type { ChatTurn, HealthInfo, Itinerary } from "./types";
 
@@ -108,18 +109,19 @@ export default function App() {
     <div className="relative flex h-screen flex-col text-zinc-900 dark:text-zinc-100">
       <Background dark={dark} />
 
-      <header className={`flex items-center justify-between px-4 py-3 ${GLASS} border-x-0 border-t-0`}>
-        <div className="flex items-center gap-2.5">
-          <img src="/logo.svg" alt="Navora" className="h-9 w-9 rounded-lg" />
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight">Navora</h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">AI multi-agent travel assistant</p>
+      <header className={`flex items-center justify-between px-5 py-3.5 ${GLASS} border-x-0 border-t-0`}>
+        <div className="flex items-center gap-3">
+          <img
+            src="/logo.svg"
+            alt="Navora"
+            className="h-11 w-11 rounded-xl drop-shadow-[0_0_12px_rgba(212,175,55,0.45)]"
+          />
+          <div className="leading-tight">
+            <h1 className="text-xl font-semibold tracking-tight">Navora</h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Plan smarter. Travel better.</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {health && <span className="hidden text-xs text-zinc-500 sm:inline">{health.mode}</span>}
-          <ThemeToggle dark={dark} onToggle={() => setDark((d) => !d)} />
-        </div>
+        <ThemeToggle dark={dark} onToggle={() => setDark((d) => !d)} />
       </header>
 
       {keyWarn && showBanner && (
@@ -145,7 +147,8 @@ export default function App() {
       <main ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-4xl px-4 py-6">
           {empty ? (
-            <div className="relative mx-auto flex min-h-[72vh] max-w-2xl flex-col items-center justify-center text-center">
+            <div className="relative isolate mx-auto flex min-h-[72vh] max-w-2xl flex-col items-center justify-center text-center">
+              <HeroGlobe />
               {FLOAT_CARDS.map((c) => (
                 <div
                   key={c.label}
@@ -164,7 +167,7 @@ export default function App() {
                 ✦ Powered by collaborating AI agents
               </span>
               <h2 className="bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl dark:from-blue-400 dark:via-cyan-300 dark:to-indigo-300">
-                Where to next?
+                Your next journey starts here.
               </h2>
               <p className="mt-4 max-w-md text-sm text-zinc-600 dark:text-zinc-400">
                 Tell me about your trip — a destination or just a vibe, how long, who's going,
