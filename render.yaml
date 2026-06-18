@@ -33,13 +33,12 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
-      # auto-injects the backend's host at build time (api.ts adds https://)
-      - key: VITE_API_BASE
-        fromService:
-          type: web
-          name: navora-api
-          property: host
+      # VITE_API_BASE left unset → frontend calls relative /api (same origin),
+      # which the rewrite below proxies to the backend (no CORS, cold-start safe).
     routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://navora-api.onrender.com/api/:splat
       - type: rewrite
         source: /*
         destination: /index.html

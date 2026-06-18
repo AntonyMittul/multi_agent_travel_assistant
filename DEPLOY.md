@@ -4,7 +4,11 @@ The repo ships a `render.yaml` Blueprint that creates **both** services:
 - `navora-api` — the FastAPI + LangGraph backend (Python web service)
 - `navora-web` — the React frontend (static site)
 
-The frontend's API URL is wired automatically (Render injects the backend host).
+The frontend calls a same-origin `/api`, which the static site **proxies** to the
+backend (a rewrite rule in `render.yaml`). No CORS, and Render's edge waits
+through free-tier cold starts. The proxy destination is the backend's public URL
+(`https://navora-api.onrender.com`) — update it in `render.yaml` if your backend
+service has a different name/URL.
 
 ## Steps
 

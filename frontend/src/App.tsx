@@ -92,10 +92,13 @@ export default function App() {
         { role: "assistant", content: res.content, itinerary: res.itinerary },
       ]);
     } catch (e) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: e instanceof Error ? e.message : "Request failed" },
-      ]);
+      const msg =
+        e instanceof TypeError
+          ? "I couldn't reach the server. On the free tier the backend can take ~50s to wake up after inactivity — please try again in a moment."
+          : e instanceof Error
+            ? e.message
+            : "Request failed";
+      setMessages((prev) => [...prev, { role: "assistant", content: msg }]);
     } finally {
       setRunning(false);
     }
