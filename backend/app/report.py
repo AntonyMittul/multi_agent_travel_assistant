@@ -24,7 +24,7 @@ from reportlab.platypus import (HRFlowable, Image as RLImage, KeepTogether,
                                 PageBreak, Paragraph, SimpleDocTemplate, Spacer,
                                 Table, TableStyle)
 
-_UA = {"User-Agent": "VoyageMind/1.0 (travel assistant)"}
+_UA = {"User-Agent": "Navora/1.0 (travel assistant)"}
 _BLUE = colors.HexColor("#2563eb")
 _LIGHT = colors.HexColor("#eef2ff")
 _ZEBRA = colors.HexColor("#f8fafc")
@@ -155,7 +155,7 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
     buf = BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4, leftMargin=2 * cm, rightMargin=2 * cm,
-        topMargin=1.8 * cm, bottomMargin=1.8 * cm, title="VoyageMind Trip Plan",
+        topMargin=1.8 * cm, bottomMargin=1.8 * cm, title="Navora Trip Plan",
     )
     base = getSampleStyleSheet()
     H2 = ParagraphStyle("H2", parent=base["Heading2"], fontName=_FONT_B, fontSize=15,
@@ -231,7 +231,7 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
         c.line(2 * cm, 2.1 * cm, W - 2 * cm, 2.1 * cm)
         c.setFont(_FONT_B, 10)
         c.setFillColor(_BLUE)
-        c.drawCentredString(W / 2, 1.55 * cm, "VoyageMind")
+        c.drawCentredString(W / 2, 1.55 * cm, "Navora")
         c.setFont(_FONT, 8)
         c.setFillColor(colors.grey)
         c.drawCentredString(W / 2, 1.15 * cm, "Multi-agent travel assistant · fares & rates are estimates")
@@ -242,7 +242,7 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
         c.line(2 * cm, 1.3 * cm, W - 2 * cm, 1.3 * cm)
         c.setFont(_FONT, 8)
         c.setFillColor(colors.grey)
-        c.drawString(2 * cm, 0.95 * cm, "VoyageMind")
+        c.drawString(2 * cm, 0.95 * cm, "Navora")
         c.drawRightString(W - 2 * cm, 0.95 * cm, f"Page {_doc.page - 1}")
 
     # ── story (starts on page 2) ──

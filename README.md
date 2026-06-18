@@ -1,4 +1,4 @@
-# VoyageMind — Multi-Agent Travel Assistant
+# Navora — Multi-Agent Travel Assistant
 
 An **agentic, multi-agent travel planner** built on **LangGraph**. An orchestrator
 decomposes a natural-language goal ("plan a 5-night trip from Mumbai to Tokyo for 2,

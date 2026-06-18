@@ -252,7 +252,7 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `VoyageMind_${(it.destination?.name ?? "trip").split(",")[0].replace(/\s+/g, "_")}.pdf`;
+      a.download = `Navora_${(it.destination?.name ?? "trip").split(",")[0].replace(/\s+/g, "_")}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();

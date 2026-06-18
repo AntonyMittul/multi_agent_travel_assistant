@@ -16,7 +16,7 @@ from .graph.builder import GRAPH, RECURSION_LIMIT
 from .llm import get_llm, llm_json
 from .tools.geo_tool import geocode
 
-app = FastAPI(title="VoyageMind — Multi-Agent Travel Assistant")
+app = FastAPI(title="Navora — Multi-Agent Travel Assistant")
 
 app.add_middleware(
     CORSMiddleware,
@@ -88,7 +88,7 @@ class ChatRequest(BaseModel):
 
 
 _INTAKE_PROMPT = (
-    "You are VoyageMind, an expert, warm, concise travel-planning assistant. "
+    "You are Navora, an expert, warm, concise travel-planning assistant. "
     "From the conversation, extract the traveler's trip preferences and decide whether "
     "you have enough to build a full itinerary.\n"
     "You can plan once you know a destination (OR a clear vibe/interest so you can pick one) "
@@ -195,7 +195,7 @@ def export(req: ExportRequest):
     return Response(
         content=pdf,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="VoyageMind_{safe}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="Navora_{safe}.pdf"'},
     )
 
 

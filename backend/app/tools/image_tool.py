@@ -13,7 +13,7 @@ import requests
 
 WIKI_API = "https://en.wikipedia.org/w/api.php"
 OPENVERSE_API = "https://api.openverse.org/v1/images/"
-_HEADERS = {"User-Agent": "VoyageMind/1.0 (multi-agent travel assistant)"}
+_HEADERS = {"User-Agent": "Navora/1.0 (multi-agent travel assistant)"}
 
 
 def _wikipedia(query: str) -> str:

@@ -15,7 +15,7 @@ OVERPASS_URLS = [
     "https://overpass.kumi.systems/api/interpreter",
 ]
 # OSM services require a descriptive User-Agent or they return 406.
-_HEADERS = {"User-Agent": "VoyageMind/1.0 (multi-agent travel assistant)"}
+_HEADERS = {"User-Agent": "Navora/1.0 (multi-agent travel assistant)"}
 
 # POI categories we surface for the activities agent
 _POI_FILTERS = [

@@ -109,10 +109,10 @@ export default function App() {
       <Background dark={dark} />
 
       <header className={`flex items-center justify-between px-4 py-3 ${GLASS} border-x-0 border-t-0`}>
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🧭</span>
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.svg" alt="Navora" className="h-9 w-9 rounded-lg" />
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">VoyageMind</h1>
+            <h1 className="text-lg font-semibold tracking-tight">Navora</h1>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">AI multi-agent travel assistant</p>
           </div>
         </div>
@@ -254,7 +254,7 @@ export default function App() {
               }
             }}
             rows={1}
-            placeholder="Message VoyageMind…  (e.g. 5 nights in Goa from Mumbai, budget ₹150000)"
+            placeholder="Message Navora…  (e.g. 5 nights in Goa from Mumbai, budget ₹150000)"
             className="max-h-40 flex-1 resize-none rounded-xl border border-zinc-300/70 bg-white/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none backdrop-blur placeholder:text-zinc-400 focus:border-blue-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
           />
           <button
