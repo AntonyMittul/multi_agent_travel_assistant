@@ -24,7 +24,7 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
   const center: [number, number] | null =
     geo?.lat != null && geo?.lon != null ? [geo.lat, geo.lon] : null;
 
-  const photoPois = (it.activities?.pois ?? []).filter((p) => p.image);
+  const places = it.activities?.pois ?? [];
 
   return (
     <div className="space-y-4">
@@ -56,14 +56,33 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
         </Card>
       )}
 
-      {photoPois.length > 0 && (
+      {places.length > 0 && (
         <Card title="Places you'll see">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {photoPois.slice(0, 6).map((p) => (
-              <figure key={p.name} className="overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
-                <img src={p.image} alt={p.name} className="h-28 w-full object-cover" loading="lazy" />
-                <figcaption className="truncate px-2 py-1 text-xs text-zinc-600 dark:text-zinc-400">
-                  {p.name}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {places.slice(0, 6).map((p) => (
+              <figure
+                key={p.name}
+                className="overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800"
+              >
+                {p.image ? (
+                  <img src={p.image} alt={p.name} className="h-28 w-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="flex h-28 w-full items-center justify-center bg-zinc-100 text-3xl dark:bg-zinc-800">
+                    {p.icon || "📍"}
+                  </div>
+                )}
+                <figcaption className="px-2.5 py-2">
+                  <div className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                    {p.name}
+                  </div>
+                  {p.tag && (
+                    <div className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                      {p.icon ? `${p.icon} ` : ""}{p.tag}
+                    </div>
+                  )}
+                  {p.category && (
+                    <div className="mt-1 text-xs text-zinc-500">{p.category}</div>
+                  )}
                 </figcaption>
               </figure>
             ))}

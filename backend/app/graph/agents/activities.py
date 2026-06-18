@@ -19,6 +19,26 @@ from ...tools.osm_tool import find_pois, find_restaurants
 _PER_DAY_ACTIVITY_USD = 35  # per person per day
 _MAX_PLACES = 6             # geocoded + photographed places (bounds API calls)
 
+# OSM category -> (icon, short reason, type label) for the offline fallback
+_OSM_BADGE = {
+    "museum": ("🏛", "Museum", "Museum"),
+    "gallery": ("🖼", "Art & Culture", "Gallery"),
+    "artwork": ("🖼", "Public Art", "Artwork"),
+    "viewpoint": ("🌄", "Scenic Spot", "Viewpoint"),
+    "park": ("🌳", "Green Escape", "Park"),
+    "zoo": ("🦁", "Family Favourite", "Zoo"),
+    "theme_park": ("🎢", "Fun & Thrills", "Theme Park"),
+    "aquarium": ("🐠", "Family Favourite", "Aquarium"),
+    "attraction": ("📍", "Popular Spot", "Attraction"),
+}
+
+
+def _osm_badge(category: str):
+    if category in _OSM_BADGE:
+        return _OSM_BADGE[category]
+    # historic=* and anything else
+    return ("🏛", "Heritage Site", (category or "Landmark").replace("_", " ").title())
+
 
 def _distribute(place_names: List[str], restaurants: List[Dict[str, Any]],
                 nights: int, rainy: bool) -> List[Dict[str, Any]]:
@@ -62,8 +82,13 @@ def activities(state: TravelState) -> Dict[str, Any]:
         f"Real restaurants for dinners (use and vary these): {rest_desc[:12]}.\n"
         "Return ONLY JSON with two keys:\n"
         '1) "attractions": 6 of the most iconic, must-see, well-known attractions a '
-        'first-time visitor would want (famous landmarks, not obscure spots), each '
-        '{"name": str, "note": short str}.\n'
+        "first-time visitor would want (famous landmarks, not obscure spots), each "
+        '{"name": str, '
+        '"category": short type label e.g. "Historical Landmark"/"Beach"/"Temple"/'
+        '"Museum"/"Viewpoint"/"UNESCO Heritage Site"/"Market", '
+        '"tag": a punchy 2-4 word reason to go e.g. "Must Visit"/"Best Sunset Spot"/'
+        '"Iconic Landmark"/"Foodie Hotspot", '
+        '"icon": ONE relevant emoji}.\n'
         '2) "plan": array of day objects {"day": int, "morning": str, "afternoon": str, '
         '"evening": str}, using those attractions for morning/afternoon and a specific '
         "real restaurant for the evening.",
@@ -81,8 +106,9 @@ def activities(state: TravelState) -> Dict[str, Any]:
             g = geocode(f"{name}, {dest}")  # OpenCage → coords for the map
             places.append({
                 "name": name,
-                "category": "attraction",
-                "note": a.get("note", "") if isinstance(a, dict) else "",
+                "category": a.get("category", "") if isinstance(a, dict) else "",
+                "tag": a.get("tag", "") if isinstance(a, dict) else "",
+                "icon": a.get("icon", "📍") if isinstance(a, dict) else "📍",
                 "lat": g.get("lat"),
                 "lon": g.get("lon"),
                 "image": get_image(f"{name} {city}"),
@@ -93,6 +119,8 @@ def activities(state: TravelState) -> Dict[str, Any]:
     if not places:
         pois = find_pois(lat, lon) if lat is not None else []
         for p in pois[:_MAX_PLACES]:
+            icon, tag, label = _osm_badge(p.get("category", ""))
+            p["icon"], p["tag"], p["category"] = icon, tag, label
             p["image"] = get_image(f"{p['name']} {city}")
             places.append(p)
     if not plan:

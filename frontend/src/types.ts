@@ -53,6 +53,8 @@ export interface HotelOption {
 export interface Poi {
   name: string;
   category: string;
+  tag?: string;
+  icon?: string;
   lat?: number;
   lon?: number;
   image?: string;
