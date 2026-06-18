@@ -17,6 +17,14 @@ const EXAMPLES = [
   "Plan 4 days in Tokyo, budget $2500, into food and culture",
 ];
 
+const REFINE_CHIPS = [
+  "Show different attractions",
+  "Add more food spots",
+  "Add some nightlife",
+  "Make it more relaxed",
+  "More offbeat / hidden gems",
+];
+
 const STYLES = [
   { key: "budget", label: "Budget", icon: "💸" },
   { key: "luxury", label: "Luxury", icon: "✨" },
@@ -61,7 +69,15 @@ export default function App() {
       const wire = history
         .filter((m) => m.content)
         .map((m) => ({ role: m.role, content: m.content as string }));
-      const res = await sendChat(wire, style);
+      // last plan → lets the backend refine (carry destination, avoid repeats)
+      const lastItin = [...history].reverse().find((m) => m.role === "assistant" && m.itinerary)?.itinerary;
+      const previous = lastItin
+        ? {
+            destination: lastItin.destination?.name ?? null,
+            attractions: (lastItin.activities?.pois ?? []).map((p) => p.name),
+          }
+        : null;
+      const res = await sendChat(wire, style, previous);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: res.content, itinerary: res.itinerary },
@@ -151,6 +167,20 @@ export default function App() {
                       </div>
                     )}
                     {m.itinerary && <ItineraryView it={m.itinerary as Itinerary} />}
+                    {m.itinerary && i === messages.length - 1 && !running && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <span className="self-center text-xs text-zinc-500">Refine:</span>
+                        {REFINE_CHIPS.map((c) => (
+                          <button
+                            key={c}
+                            onClick={() => send(c)}
+                            className="rounded-full border border-zinc-300 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )
               )}

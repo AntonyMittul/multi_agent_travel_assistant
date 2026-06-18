@@ -31,16 +31,22 @@ export interface ChatResponse {
   itinerary?: Itinerary;
 }
 
+export interface PrevPlan {
+  destination: string | null;
+  attractions: string[];
+}
+
 /** Send the conversation; backend either asks a follow-up or returns a plan. */
 export async function sendChat(
   messages: { role: string; content: string }[],
   style?: string | null,
+  previous?: PrevPlan | null,
   signal?: AbortSignal
 ): Promise<ChatResponse> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, style: style ?? null }),
+    body: JSON.stringify({ messages, style: style ?? null, previous: previous ?? null }),
     signal,
   });
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);

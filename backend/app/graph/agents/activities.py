@@ -73,7 +73,16 @@ def activities(state: TravelState) -> Dict[str, Any]:
     interests = prefs.get("interests", [])
     rainy = bool(state.get("weather", {}).get("rainy"))
     style = prefs.get("style")
+    refine = prefs.get("refine")
+    avoid = prefs.get("avoid_attractions") or []
     completed = state.get("completed_agents", []) + ["activities"]
+
+    refine_clause = ""
+    if refine:
+        refine_clause += f" The traveler specifically asked: '{refine}'. Honor this request. "
+    if avoid:
+        refine_clause += (f" Do NOT repeat these already-suggested attractions — pick "
+                          f"different, fresh ones: {avoid}. ")
 
     style_hint = {
         "budget": "free/low-cost and local experiences",
@@ -95,6 +104,7 @@ def activities(state: TravelState) -> Dict[str, Any]:
         f"Plan a {nights}-day trip to {dest}. Traveler interests: {interests}. "
         f"Travel style: {style or 'general'} — favour {style_hint}. "
         f"Weather: {'rainy, prefer indoor options' if rainy else 'mostly dry'}. "
+        f"{refine_clause}"
         f"Real restaurants for dinners (use and vary these): {rest_desc[:12]}.\n"
         "Return ONLY JSON with two keys:\n"
         '1) "attractions": 6 of the most iconic, must-see, well-known attractions a '

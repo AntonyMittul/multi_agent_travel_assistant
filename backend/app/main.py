@@ -83,6 +83,8 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     style: str | None = None  # travel style: budget/luxury/family/adventure/solo/business
+    # last plan's {destination, attractions:[names]} — enables refinement
+    previous: Dict[str, Any] | None = None
 
 
 _INTAKE_PROMPT = (
@@ -140,6 +142,18 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
     prefs_in = intake.get("preferences") or _heuristic_parse(last_user)
     if req.style:
         prefs_in["style"] = req.style
+
+    # ---- conversational refinement ----
+    prev = req.previous or {}
+    if prev:
+        if not prefs_in.get("destination") and prev.get("destination"):
+            prefs_in["destination"] = prev["destination"]
+        prefs_in["refine"] = last_user  # the traveler's latest request
+        same_dest = (prefs_in.get("destination") or "").strip().lower() == \
+                    (prev.get("destination") or "").strip().lower()
+        if same_dest:
+            prefs_in["avoid_attractions"] = prev.get("attractions", [])
+
     prefs = _normalize(prefs_in)
     try:
         final = GRAPH.invoke(
