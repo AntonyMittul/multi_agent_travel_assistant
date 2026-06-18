@@ -19,6 +19,17 @@ from ...tools.fx_tool import SYMBOL_TO_CODE, to_usd
 # (it needs every other agent's costs), logistics after weather (reuses geo).
 PLAN = ["destination", "weather", "flight", "hotel", "activities", "logistics", "budget"]
 
+# travel style -> (hotel_tier, flight_tier). Drives a different plan for the
+# same city. The critic can still downgrade tiers later to fit a budget.
+STYLE_TIERS = {
+    "budget": ("budget", "economy"),
+    "luxury": ("luxury", "business"),
+    "family": ("mid", "economy"),
+    "adventure": ("budget", "economy"),
+    "solo": ("budget", "economy"),
+    "business": ("mid", "business"),
+}
+
 _INTEREST_WORDS = [
     "beach", "hiking", "history", "museum", "food", "nightlife", "nature",
     "adventure", "shopping", "art", "wildlife", "skiing", "diving", "culture",
@@ -131,9 +142,12 @@ def _normalize(prefs: Dict[str, Any]) -> Dict[str, Any]:
         prefs["start_date"] = start.isoformat()
         prefs["end_date"] = (start + _dt.timedelta(days=prefs["nights"])).isoformat()
 
-    # tiers can be downgraded later by the critic via constraints
-    prefs.setdefault("hotel_tier", "mid")
-    prefs.setdefault("flight_tier", "economy")
+    # travel style sets the default tiers (critic may downgrade later to fit budget)
+    style = (prefs.get("style") or "").strip().lower()
+    ht, ft = STYLE_TIERS.get(style, ("mid", "economy"))
+    prefs.setdefault("hotel_tier", ht)
+    prefs.setdefault("flight_tier", ft)
+    prefs["style"] = style or None
     return prefs
 
 

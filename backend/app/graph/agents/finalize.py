@@ -126,9 +126,11 @@ def _build_agent_log(state: TravelState, sym: str, total: float):
     logi = state.get("logistics", {})
     rev = state.get("revision_count", 0)
 
+    style = prefs.get("style")
     log = [{
         "label": "Orchestrator",
-        "detail": "Decomposed your request and routed it to specialist agents",
+        "detail": "Decomposed your request and routed it to specialist agents"
+                  + (f", tailored for a {style} trip" if style else ""),
     }, {
         "label": "Destination Agent",
         "detail": f"Selected {prefs.get('destination', 'your destination')}",

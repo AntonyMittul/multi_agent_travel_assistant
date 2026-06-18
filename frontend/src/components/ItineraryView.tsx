@@ -31,8 +31,13 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
   const nights = Number(prefs.nights) || it.hotels?.best_value?.nights;
   const travelers = Number(prefs.travelers);
   const temp = it.weather?.avg_high_c;
+  const styleIcon: Record<string, string> = {
+    budget: "💸", luxury: "✨", family: "👨‍👩‍👧", adventure: "🏔", solo: "🎒", business: "💼",
+  };
+  const style = prefs.style ? String(prefs.style) : "";
   const stats = [
     it.destination?.name && { icon: "📍", value: it.destination.name.split(",")[0], label: "Destination" },
+    style && { icon: styleIcon[style] ?? "🎒", value: style.charAt(0).toUpperCase() + style.slice(1), label: "Style" },
     nights && { icon: "🗓", value: `${nights + 1}`, label: "Days" },
     nights && { icon: "🏨", value: `${nights}`, label: "Nights" },
     travelers && { icon: "👥", value: `${travelers}`, label: travelers > 1 ? "Travelers" : "Traveler" },

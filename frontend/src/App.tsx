@@ -17,8 +17,18 @@ const EXAMPLES = [
   "Plan 4 days in Tokyo, budget $2500, into food and culture",
 ];
 
+const STYLES = [
+  { key: "budget", label: "Budget", icon: "💸" },
+  { key: "luxury", label: "Luxury", icon: "✨" },
+  { key: "family", label: "Family", icon: "👨‍👩‍👧" },
+  { key: "adventure", label: "Adventure", icon: "🏔" },
+  { key: "solo", label: "Solo", icon: "🎒" },
+  { key: "business", label: "Business", icon: "💼" },
+];
+
 export default function App() {
   const [input, setInput] = useState("");
+  const [style, setStyle] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [running, setRunning] = useState(false);
   const [health, setHealth] = useState<HealthInfo | null>(null);
@@ -51,7 +61,7 @@ export default function App() {
       const wire = history
         .filter((m) => m.content)
         .map((m) => ({ role: m.role, content: m.content as string }));
-      const res = await sendChat(wire);
+      const res = await sendChat(wire, style);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: res.content, itinerary: res.itinerary },
@@ -151,6 +161,26 @@ export default function App() {
       </main>
 
       <footer className="border-t border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto mb-2 flex max-w-4xl flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs text-zinc-500">Travel style:</span>
+          {STYLES.map((s) => {
+            const active = style === s.key;
+            return (
+              <button
+                key={s.key}
+                onClick={() => setStyle(active ? null : s.key)}
+                className={
+                  "rounded-full border px-2.5 py-1 text-xs transition " +
+                  (active
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800")
+                }
+              >
+                {s.icon} {s.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="mx-auto flex max-w-4xl items-end gap-2">
           <textarea
             value={input}

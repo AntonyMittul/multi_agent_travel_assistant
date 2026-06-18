@@ -67,7 +67,17 @@ def activities(state: TravelState) -> Dict[str, Any]:
     travelers = prefs.get("travelers", 1)
     interests = prefs.get("interests", [])
     rainy = bool(state.get("weather", {}).get("rainy"))
+    style = prefs.get("style")
     completed = state.get("completed_agents", []) + ["activities"]
+
+    style_hint = {
+        "budget": "free/low-cost and local experiences",
+        "luxury": "upscale, iconic and refined experiences",
+        "family": "kid-friendly, easy and fun spots",
+        "adventure": "outdoor, active and adventurous spots",
+        "solo": "safe, social and walkable spots",
+        "business": "central, efficient, short-on-time-friendly spots",
+    }.get((style or "").lower(), "a well-rounded mix")
 
     geo = state.get("destination", {}).get("geo", {})
     lat, lon = geo.get("lat"), geo.get("lon")
@@ -78,6 +88,7 @@ def activities(state: TravelState) -> Dict[str, Any]:
     # ---- Gemini: iconic attractions + day plan in one shot ----
     result = llm_json(
         f"Plan a {nights}-day trip to {dest}. Traveler interests: {interests}. "
+        f"Travel style: {style or 'general'} — favour {style_hint}. "
         f"Weather: {'rainy, prefer indoor options' if rainy else 'mostly dry'}. "
         f"Real restaurants for dinners (use and vary these): {rest_desc[:12]}.\n"
         "Return ONLY JSON with two keys:\n"

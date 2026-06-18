@@ -82,6 +82,7 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
+    style: str | None = None  # travel style: budget/luxury/family/adventure/solo/business
 
 
 _INTAKE_PROMPT = (
@@ -136,7 +137,10 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
             "content": intake.get("question") or "Tell me a bit more about your trip?",
         }
 
-    prefs = _normalize(intake.get("preferences") or _heuristic_parse(last_user))
+    prefs_in = intake.get("preferences") or _heuristic_parse(last_user)
+    if req.style:
+        prefs_in["style"] = req.style
+    prefs = _normalize(prefs_in)
     try:
         final = GRAPH.invoke(
             {"query": last_user, "preferences": prefs, "messages": [], "errors": []},
