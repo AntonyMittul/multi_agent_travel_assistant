@@ -1,8 +1,8 @@
 """Build a downloadable PDF trip plan from an itinerary dict (ReportLab).
 
-Uses a bundled Unicode font (DejaVu Sans) so currency symbols like ₹/€/£/¥
-render correctly. Images are fetched server-side (no browser CORS) and the map
-is rendered from OSM tiles; every image/map step degrades gracefully.
+Page 1 is a designed cover (full-bleed cropped hero banner + centered title +
+footer) drawn directly on the canvas; the plan starts on page 2. Uses a bundled
+Unicode font (DejaVu Sans) so ₹/€/£/¥ render. Images are fetched server-side.
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (HRFlowable, Image as RLImage, KeepTogether,
@@ -28,8 +29,9 @@ _BLUE = colors.HexColor("#2563eb")
 _LIGHT = colors.HexColor("#eef2ff")
 _ZEBRA = colors.HexColor("#f8fafc")
 _GREY = colors.HexColor("#e5e7eb")
+_DARK = colors.HexColor("#374151")
+_MUTED = colors.HexColor("#6b7280")
 
-# Register the bundled Unicode font (falls back to Helvetica if missing).
 _FONT, _FONT_B = "Helvetica", "Helvetica-Bold"
 try:
     _fd = os.path.join(os.path.dirname(__file__), "fonts")
@@ -42,6 +44,35 @@ except Exception:
 
 def _esc(s: Any) -> str:
     return html.escape(str(s if s is not None else ""), quote=False)
+
+
+def _cover_banner(url: str, ratio: float) -> Optional[ImageReader]:
+    """Fetch + centre-crop the hero to `ratio` (w/h) for a full-bleed banner."""
+    if not url:
+        return None
+    try:
+        from PIL import Image as PILImage
+
+        r = requests.get(url, headers=_UA, timeout=12)
+        if r.status_code != 200:
+            return None
+        im = PILImage.open(BytesIO(r.content)).convert("RGB")
+        iw, ih = im.size
+        cur = iw / ih
+        if cur > ratio:  # too wide → crop sides
+            nw = int(ih * ratio)
+            x = (iw - nw) // 2
+            im = im.crop((x, 0, x + nw, ih))
+        else:            # too tall → crop top/bottom
+            nh = int(iw / ratio)
+            y = (ih - nh) // 2
+            im = im.crop((0, y, iw, y + nh))
+        buf = BytesIO()
+        im.save(buf, "JPEG", quality=85)
+        buf.seek(0)
+        return ImageReader(buf)
+    except Exception:
+        return None
 
 
 def _fetch_image(url: str, max_w: float, max_h: Optional[float] = None) -> Optional[RLImage]:
@@ -127,14 +158,11 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
         topMargin=1.8 * cm, bottomMargin=1.8 * cm, title="VoyageMind Trip Plan",
     )
     base = getSampleStyleSheet()
-    H1 = ParagraphStyle("H1", parent=base["Title"], fontName=_FONT_B, fontSize=30,
-                        textColor=_BLUE, spaceAfter=6)
     H2 = ParagraphStyle("H2", parent=base["Heading2"], fontName=_FONT_B, fontSize=15,
                         textColor=_BLUE, spaceBefore=2, spaceAfter=4)
     body = ParagraphStyle("body", parent=base["Normal"], fontName=_FONT, fontSize=10, leading=16)
     small = ParagraphStyle("small", parent=base["Normal"], fontName=_FONT, fontSize=8,
                            textColor=colors.grey, leading=12)
-    centre = ParagraphStyle("centre", parent=body, alignment=TA_CENTER, fontSize=12, leading=18)
 
     cur = it.get("currency") or {}
     sym = cur.get("symbol", "$")
@@ -147,27 +175,13 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
 
     prefs = it.get("preferences") or {}
     dest = (it.get("destination") or {}).get("name", "Your Trip")
+    dest_title = dest.split(",")[0].strip() or "Your Trip"
     cw = doc.width
-    story: List[Any] = []
 
-    def section(heading: str, *flowables) -> None:
-        """Add a section that stays together on one page."""
-        block = [
-            Paragraph(heading, H2),
-            HRFlowable(width="100%", thickness=1, color=_GREY, spaceBefore=2, spaceAfter=8),
-            *[f for f in flowables if f is not None],
-        ]
-        story.append(KeepTogether(block))
-        story.append(Spacer(1, 0.7 * cm))
-
-    # ── cover ──
-    hero = (it.get("destination") or {}).get("image")
-    himg = _fetch_image(hero, cw, max_h=11 * cm)
-    story.append(Spacer(1, 1 * cm))
-    if himg:
-        story.append(himg)
-        story.append(Spacer(1, 0.8 * cm))
-    story.append(Paragraph(f"Trip to {_esc(dest)}", H1))
+    # ── cover assets ──
+    W, H = A4
+    band_h = H * 0.46
+    banner = _cover_banner((it.get("destination") or {}).get("image"), W / band_h)
     bits = []
     if prefs.get("nights"):
         bits.append(f"{prefs['nights']} nights")
@@ -177,16 +191,75 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
         bits.append(f"{prefs['style']} style")
     if prefs.get("start_date"):
         bits.append(f"from {prefs['start_date']}")
-    if bits:
-        story.append(Paragraph(_esc(" · ".join(bits)), centre))
-    story.append(Spacer(1, 0.6 * cm))
-    story.append(Paragraph("Generated by VoyageMind — multi-agent travel assistant", small))
-    story.append(PageBreak())
+    subtitle = "  ·  ".join(bits)
+    flag = (it.get("logistics") or {}).get("flag", "")
+
+    def draw_cover(c, _doc):
+        # full-bleed banner
+        if banner is not None:
+            c.drawImage(banner, 0, H - band_h, width=W, height=band_h, mask="auto")
+        else:
+            c.setFillColor(_BLUE)
+            c.rect(0, H - band_h, W, band_h, fill=1, stroke=0)
+        # accent strip
+        c.setFillColor(_BLUE)
+        c.rect(0, H - band_h - 6, W, 6, fill=1, stroke=0)
+        # title block
+        ty = H - band_h - 78
+        c.setFillColor(_BLUE)
+        c.setFont(_FONT_B, 34)
+        c.drawCentredString(W / 2, ty, f"Trip to {dest_title}")
+        if flag:
+            c.setFont(_FONT, 22)
+            c.setFillColor(_DARK)
+            c.drawCentredString(W / 2, ty - 34, flag)
+        if subtitle:
+            c.setFont(_FONT, 13)
+            c.setFillColor(_DARK)
+            c.drawCentredString(W / 2, ty - (62 if flag else 30), subtitle)
+        c.setFont(_FONT, 11)
+        c.setFillColor(_MUTED)
+        c.drawCentredString(W / 2, ty - (92 if flag else 60),
+                            "Your personalised, AI-planned itinerary")
+        # divider
+        c.setStrokeColor(_GREY)
+        c.setLineWidth(1)
+        c.line(W / 2 - 55, ty - (112 if flag else 80), W / 2 + 55, ty - (112 if flag else 80))
+        # footer pinned to the bottom
+        c.setStrokeColor(_GREY)
+        c.setLineWidth(0.5)
+        c.line(2 * cm, 2.1 * cm, W - 2 * cm, 2.1 * cm)
+        c.setFont(_FONT_B, 10)
+        c.setFillColor(_BLUE)
+        c.drawCentredString(W / 2, 1.55 * cm, "VoyageMind")
+        c.setFont(_FONT, 8)
+        c.setFillColor(colors.grey)
+        c.drawCentredString(W / 2, 1.15 * cm, "Multi-agent travel assistant · fares & rates are estimates")
+
+    def draw_footer(c, _doc):
+        c.setStrokeColor(_GREY)
+        c.setLineWidth(0.5)
+        c.line(2 * cm, 1.3 * cm, W - 2 * cm, 1.3 * cm)
+        c.setFont(_FONT, 8)
+        c.setFillColor(colors.grey)
+        c.drawString(2 * cm, 0.95 * cm, "VoyageMind")
+        c.drawRightString(W - 2 * cm, 0.95 * cm, f"Page {_doc.page - 1}")
+
+    # ── story (starts on page 2) ──
+    story: List[Any] = [PageBreak()]
+
+    def section(heading: str, *flowables) -> None:
+        block = [
+            Paragraph(heading, H2),
+            HRFlowable(width="100%", thickness=1, color=_GREY, spaceBefore=2, spaceAfter=8),
+            *[f for f in flowables if f is not None],
+        ]
+        story.append(KeepTogether(block))
+        story.append(Spacer(1, 0.7 * cm))
 
     b = it.get("budget") or {}
     weather = it.get("weather") or {}
 
-    # ── overview (summary + stats) ──
     overview_flow: List[Any] = []
     if it.get("summary"):
         overview_flow.append(Paragraph(_esc(it["summary"]), body))
@@ -208,7 +281,6 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
     if overview_flow:
         section("Overview", *overview_flow)
 
-    # ── map ──
     geo = (it.get("destination") or {}).get("geo") or {}
     center = (geo.get("lat"), geo.get("lon")) if geo.get("lat") is not None else None
     places = (it.get("activities") or {}).get("pois") or []
@@ -217,11 +289,9 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
         if mimg:
             section("Map", mimg)
 
-    # ── weather ──
     if weather.get("available"):
         section("Weather", Paragraph(_esc(weather.get("summary", "")), body))
 
-    # ── itinerary ──
     plan = (it.get("activities") or {}).get("plan") or []
     if plan:
         data = [["Day", "Morning", "Afternoon", "Evening"]]
@@ -235,7 +305,6 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
         three = (cw - 1.2 * cm) / 3
         section("Day-by-day itinerary", _table(data, [1.2 * cm, three, three, three]))
 
-    # ── attractions ──
     if places:
         lines = []
         for i, p in enumerate(places[:6], 1):
@@ -248,7 +317,6 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
             lines.append(Spacer(1, 0.15 * cm))
         section("Top attractions", *lines)
 
-    # ── hotels ──
     hotels = it.get("hotels") or {}
     if hotels.get("available") and hotels.get("options"):
         data = [["Hotel", "Per night", "Total"]]
@@ -258,7 +326,6 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
         section("Hotels", _table(data, [cw * 0.5, cw * 0.25, cw * 0.25]),
                 Paragraph("Rates are estimates.", small))
 
-    # ── flights ──
     flights = it.get("flights") or {}
     if flights.get("available") and flights.get("options"):
         data = [["Airline", "Price (est.)"]]
@@ -266,7 +333,6 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
             data.append([Paragraph(_esc(f.get("airline", "")), body), money(f.get("total_price"))])
         section(f"Flights · {_esc(flights.get('route', ''))}", _table(data, [cw * 0.65, cw * 0.35]))
 
-    # ── budget ──
     if b.get("breakdown"):
         data = [["Item", "Cost"]]
         for k, v in b["breakdown"].items():
@@ -274,12 +340,9 @@ def build_pdf(it: Dict[str, Any]) -> bytes:
         data.append(["Total", money(b.get("total"))])
         section("Budget (estimated)", _table(data, [cw * 0.6, cw * 0.4], total_row=True))
 
-    # ── local info ──
     logi = it.get("logistics") or {}
     if logi.get("available"):
         section("Local info", Paragraph(_esc(logi.get("summary", "")), body))
 
-    story.append(Paragraph("Flight fares and hotel rates are estimates. Generated by VoyageMind.", small))
-
-    doc.build(story)
+    doc.build(story, onFirstPage=draw_cover, onLaterPages=draw_footer)
     return buf.getvalue()
