@@ -13,6 +13,42 @@ export interface HealthInfo {
   model: string | null;
 }
 
+export interface Geo {
+  lat?: number;
+  lon?: number;
+  formatted?: string;
+  country?: string;
+}
+
+export interface FlightOption {
+  airline: string;
+  flight_number?: string;
+  depart_time?: string;
+  arrive_time?: string;
+  tier: string;
+  total_price: number;
+  price_estimated?: boolean;
+}
+
+export interface HotelOption {
+  name: string;
+  lat?: number;
+  lon?: number;
+  stars?: number | null;
+  website?: string;
+  nightly_rate: number;
+  nights: number;
+  total_price: number;
+  price_estimated?: boolean;
+}
+
+export interface Poi {
+  name: string;
+  category: string;
+  lat?: number;
+  lon?: number;
+}
+
 // Loose itinerary shape — the backend assembles every agent's slice here.
 export interface Itinerary {
   summary?: string;
@@ -23,32 +59,44 @@ export interface Itinerary {
     best_time?: string;
     highlights?: string[];
     why_chosen?: string;
+    geo?: Geo;
+    population?: number;
+    region?: string;
   };
   weather?: {
+    available?: boolean;
     summary?: string;
     avg_high_c?: number;
     avg_rain_pct?: number;
     days?: { date: string; high_c: number; low_c: number; rain_pct: number; condition: string }[];
   };
   flights?: {
+    available?: boolean;
     summary?: string;
+    route?: string;
+    distance_km?: number;
+    source?: string;
     cheapest?: FlightOption;
     options?: FlightOption[];
   };
   hotels?: {
+    available?: boolean;
     summary?: string;
+    source?: string;
     best_value?: HotelOption;
     options?: HotelOption[];
   };
   activities?: {
     estimated_cost?: number;
     plan?: { day: number; morning: string; afternoon: string; evening: string }[];
+    pois?: Poi[];
   };
   logistics?: {
+    available?: boolean;
     summary?: string;
     currency?: string;
     languages?: string[];
-    capital?: string;
+    timezone?: string;
     flag?: string;
   };
   budget?: {
@@ -59,22 +107,4 @@ export interface Itinerary {
     breakdown?: Record<string, number>;
   };
   critic?: { verdict?: string; issues?: string[]; action?: string };
-}
-
-export interface FlightOption {
-  airline: string;
-  tier: string;
-  stops: number;
-  depart_time: string;
-  duration_h: number;
-  total_price: number;
-}
-
-export interface HotelOption {
-  name: string;
-  tier: string;
-  rating: number;
-  nightly_rate: number;
-  nights: number;
-  total_price: number;
 }

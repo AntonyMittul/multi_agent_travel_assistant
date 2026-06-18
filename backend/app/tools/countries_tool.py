@@ -112,3 +112,11 @@ def get_country_info(country_or_city: str) -> Dict[str, Any]:
         "country": country_or_city.title(),
         "summary": f"Reference data for {country_or_city.title()} isn't in the local table.",
     }
+
+
+def get_languages(country: str) -> list:
+    """Languages for a country (OpenCage doesn't provide this). [] if unknown."""
+    if not country:
+        return []
+    key = _ALIASES.get(country.strip().lower(), country.strip().lower())
+    return _DATA.get(key, {}).get("languages", [])

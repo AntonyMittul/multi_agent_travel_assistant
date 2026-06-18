@@ -6,60 +6,40 @@ interface Props {
   running: boolean;
 }
 
-const KIND_BADGE: Record<string, string> = {
-  plan: "bg-indigo-500/20 text-indigo-200",
-  route: "bg-slate-500/20 text-slate-300",
-  result: "bg-emerald-500/20 text-emerald-200",
-  revise: "bg-orange-500/20 text-orange-200",
-  approve: "bg-green-500/20 text-green-200",
-  final: "bg-fuchsia-500/20 text-fuchsia-200",
-  error: "bg-red-500/20 text-red-200",
-};
-
 export default function AgentTimeline({ events, running }: Props) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+    <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-200">Agent activity</h2>
-        {running && (
-          <span className="flex items-center gap-2 text-xs text-indigo-300">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
-            live
-          </span>
-        )}
+        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Agent activity</h2>
+        {running && <span className="text-xs text-zinc-500">running…</span>}
       </div>
 
-      {events.length === 0 && (
-        <p className="text-sm text-slate-500">
-          Submit a trip to watch the orchestrator delegate to specialist agents in real time.
+      {events.length === 0 ? (
+        <p className="text-sm text-zinc-500">
+          Submit a trip to watch the orchestrator delegate to specialist agents.
         </p>
-      )}
-
-      <ol className="relative space-y-3 border-l border-white/10 pl-5">
-        {events.map((e, i) => {
-          const meta = agentMeta(e.agent);
-          return (
-            <li key={i} className="relative">
-              <span className="absolute -left-[27px] flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-xs ring-1 ring-white/10">
-                {meta.icon}
-              </span>
-              <div className={`rounded-xl border bg-slate-900/40 p-3 ${meta.color}`}>
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="text-xs font-semibold">{meta.label}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                      KIND_BADGE[e.kind] ?? "bg-slate-500/20 text-slate-300"
-                    }`}
-                  >
-                    {e.kind}
-                  </span>
+      ) : (
+        <ul className="space-y-2">
+          {events.map((e, i) => {
+            const meta = agentMeta(e.agent);
+            const revise = e.kind === "revise";
+            return (
+              <li key={i} className="flex gap-2.5 text-sm">
+                <span className="mt-0.5 w-4 shrink-0 text-center text-zinc-400">{meta.icon}</span>
+                <div>
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">{meta.label}</span>
+                  {revise && (
+                    <span className="ml-2 rounded border border-amber-300 px-1.5 py-0.5 text-[10px] uppercase text-amber-700 dark:border-amber-700 dark:text-amber-400">
+                      replan
+                    </span>
+                  )}
+                  <p className="text-zinc-600 dark:text-zinc-400">{e.text}</p>
                 </div>
-                <p className="text-sm text-slate-200">{e.text}</p>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

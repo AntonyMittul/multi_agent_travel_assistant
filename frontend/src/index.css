@@ -1,10 +1,17 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: dark;
+/* Class-based dark mode (toggled on <html>), not prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Keep Leaflet tiles inside rounded containers */
+.leaflet-container {
+  font: inherit;
 }

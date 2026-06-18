@@ -1,10 +1,14 @@
-"""Destination agent: choose a place (if unspecified) and describe it."""
+"""Destination agent: choose a place (if unspecified), geocode it (OpenCage),
+enrich it (GeoDB + Gemini). Stores geo coords used by every downstream agent.
+"""
 from __future__ import annotations
 
 from typing import Any, Dict
 
 from ...llm import llm_json
 from ...state import TravelState, event
+from ...tools.geo_tool import geocode
+from ...tools.geodb_tool import city_facts
 
 _FALLBACK_SUGGEST = {
     "beach": "Bali, Indonesia", "hiking": "Queenstown, New Zealand",
@@ -18,9 +22,9 @@ def destination(state: TravelState) -> Dict[str, Any]:
     prefs = dict(state.get("preferences", {}))
     completed = state.get("completed_agents", []) + ["destination"]
     dest = prefs.get("destination")
+    why = ""
 
     if not dest:
-        # autonomously pick a destination from interests / vibe
         interests = prefs.get("interests", [])
         vibe = prefs.get("vibe") or ""
         suggestion = llm_json(
@@ -30,16 +34,18 @@ def destination(state: TravelState) -> Dict[str, Any]:
             fallback=None,
         )
         if isinstance(suggestion, dict) and suggestion.get("destination"):
-            dest = suggestion["destination"]
-            why = suggestion.get("why", "")
+            dest, why = suggestion["destination"], suggestion.get("why", "")
         else:
             key = next((i for i in interests if i in _FALLBACK_SUGGEST), None)
             dest = _FALLBACK_SUGGEST.get(key, "Lisbon, Portugal")
             why = "Great all-round destination matching your interests."
         prefs["destination"] = dest
-    else:
-        why = ""
 
+    # ---- real geocoding + annotations (OpenCage) ----
+    geo = geocode(dest)
+    facts = city_facts(dest)  # GeoDB: population / region (optional)
+
+    # ---- descriptive profile (Gemini, templated fallback) ----
     profile = llm_json(
         f"Return JSON about {dest} for a traveler interested in {prefs.get('interests')}: "
         "{\"best_time\": \"...\", \"highlights\": [\"..\",\"..\",\"..\"], \"blurb\": \"2 sentences\"}.",
@@ -50,11 +56,19 @@ def destination(state: TravelState) -> Dict[str, Any]:
         },
     )
 
-    data = {"name": dest, "why_chosen": why, **(profile if isinstance(profile, dict) else {})}
+    data = {
+        "name": dest,
+        "why_chosen": why,
+        "geo": geo if geo.get("available") else {},
+        "population": facts.get("population"),
+        "region": facts.get("region"),
+        **(profile if isinstance(profile, dict) else {}),
+    }
+    note = "" if geo.get("available") else f" ({geo.get('summary', 'geocoding unavailable')})"
     return {
         "preferences": prefs,
         "destination": data,
         "completed_agents": completed,
         "messages": [event("destination", "result",
-                           f"Destination: {dest}. {data.get('blurb', '')}", data)],
+                           f"Destination: {dest}.{note} {data.get('blurb', '')}", data)],
     }

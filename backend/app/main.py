@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from .config import GEMINI_MODEL, llm_available
 from .graph.builder import GRAPH, RECURSION_LIMIT
+from .tools.geodb_tool import search_cities
 
 app = FastAPI(title="VoyageMind — Multi-Agent Travel Assistant")
 
@@ -35,6 +36,15 @@ def health() -> Dict[str, Any]:
         "mode": "live (Gemini)" if llm_available() else "demo (offline, mock data)",
         "model": GEMINI_MODEL if llm_available() else None,
     }
+
+
+@app.get("/api/cities")
+def cities(q: str = "") -> Dict[str, Any]:
+    """City autocomplete (GeoDB) for the destination/origin inputs."""
+    q = q.strip()
+    if len(q) < 2:
+        return {"results": []}
+    return {"results": search_cities(q, limit=6)}
 
 
 def _sse(event: Dict[str, Any]) -> str:

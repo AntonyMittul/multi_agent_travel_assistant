@@ -6,43 +6,46 @@ interface Props {
 }
 
 const EXAMPLES = [
-  "Plan a 5-night trip from Mumbai to Tokyo for 2 people, budget $3000, love food and culture",
-  "Beach holiday for a family of 4, 6 nights, budget $2500, from London",
+  "5-night trip from Mumbai to Tokyo for 2, budget $3000, love food and culture",
+  "Beach holiday from London for a family of 4, 6 nights, budget $2500",
   "Adventure trip with hiking and nature, 4 nights, budget $1200",
 ];
 
 export default function PlanForm({ query, setQuery, onSubmit, running }: Props) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
-      <label className="mb-2 block text-sm font-medium text-slate-300">
+    <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
         Describe your trip
       </label>
       <textarea
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         rows={3}
-        placeholder="e.g. Plan a 5-night trip from Mumbai to Tokyo for 2, budget $3000, love food & culture"
-        className="w-full resize-none rounded-xl border border-white/10 bg-slate-900/60 p-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400/60"
+        placeholder="e.g. 5-night trip from Mumbai to Tokyo for 2, budget $3000, love food and culture"
+        className="w-full resize-none rounded-md border border-zinc-300 bg-white p-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
       />
-      <div className="mt-3 flex flex-wrap gap-2">
+
+      <div className="mt-3 space-y-1">
+        <p className="text-xs text-zinc-500 dark:text-zinc-500">Try:</p>
         {EXAMPLES.map((ex) => (
           <button
             key={ex}
             onClick={() => setQuery(ex)}
             disabled={running}
-            className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400 transition hover:border-indigo-400/50 hover:text-slate-200 disabled:opacity-40"
+            className="block w-full truncate rounded border border-zinc-200 px-2.5 py-1.5 text-left text-xs text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
-            {ex.length > 42 ? ex.slice(0, 42) + "…" : ex}
+            {ex}
           </button>
         ))}
       </div>
+
       <button
         onClick={onSubmit}
         disabled={running || !query.trim()}
-        className="mt-4 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+        className="mt-4 w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {running ? "Agents working…" : "Plan my trip ✦"}
+        {running ? "Planning…" : "Plan my trip"}
       </button>
-    </div>
+    </section>
   );
 }
