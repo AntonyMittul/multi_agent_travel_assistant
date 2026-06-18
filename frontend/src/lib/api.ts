@@ -1,8 +1,10 @@
 import type { HealthInfo, Itinerary } from "../types";
 
 // In dev this is empty and Vite proxies /api → :8000. In production set
-// VITE_API_BASE to the deployed backend URL (e.g. https://navora-api.onrender.com).
-const API_BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");
+// VITE_API_BASE to the deployed backend (full URL or bare host — Render injects
+// the host). A scheme-less value gets https:// prepended.
+const raw = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");
+const API_BASE = raw && !/^https?:\/\//.test(raw) ? `https://${raw}` : raw;
 const url = (path: string) => `${API_BASE}${path}`;
 
 /** Request a PDF of the trip plan and return it as a Blob. */

@@ -1,0 +1,45 @@
+# Render Blueprint — deploys Navora's backend (Python API) + frontend (static).
+# Render dashboard → New → Blueprint → connect this repo. Then fill the secret
+# env vars (GOOGLE_API_KEY, OPENCAGE_API_KEY) on the navora-api service.
+services:
+  # ---- backend: FastAPI + LangGraph ----
+  - type: web
+    name: navora-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: GOOGLE_API_KEY
+        sync: false        # set in the Render dashboard (secret)
+      - key: OPENCAGE_API_KEY
+        sync: false        # set in the Render dashboard (secret)
+      - key: AVIATIONSTACK_API_KEY
+        sync: false        # optional
+
+  # ---- frontend: Vite/React static site ----
+  - type: web
+    name: navora-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # auto-injects the backend's host at build time (api.ts adds https://)
+      - key: VITE_API_BASE
+        fromService:
+          type: web
+          name: navora-api
+          property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
