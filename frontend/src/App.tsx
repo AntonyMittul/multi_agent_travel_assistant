@@ -3,7 +3,6 @@ import ItineraryView from "./components/ItineraryView";
 import ThemeToggle from "./components/ThemeToggle";
 import Loader from "./components/Loader";
 import Background from "./components/Background";
-import HeroGlobe from "./components/HeroGlobe";
 import { getHealth, sendChat } from "./lib/api";
 import type { ChatTurn, HealthInfo, Itinerary } from "./types";
 
@@ -148,7 +147,6 @@ export default function App() {
         <div className="mx-auto max-w-4xl px-4 py-6">
           {empty ? (
             <div className="relative isolate mx-auto flex min-h-[72vh] max-w-2xl flex-col items-center justify-center text-center">
-              <HeroGlobe />
               {FLOAT_CARDS.map((c) => (
                 <div
                   key={c.label}

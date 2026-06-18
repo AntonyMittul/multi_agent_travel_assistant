@@ -18,27 +18,22 @@ body {
 }
 
 /* ── ambient / scene animations ───────────────────────────────────────── */
-@keyframes vm-spin {
-  to { transform: rotate(360deg); }
-}
 @keyframes vm-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-12px); }
 }
 @keyframes vm-ping {
   0% { transform: scale(0.6); opacity: 0.7; }
-  80%, 100% { transform: scale(2.6); opacity: 0; }
+  80%, 100% { transform: scale(2.8); opacity: 0; }
 }
-@keyframes vm-drift {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+@keyframes vm-dash {
+  to { stroke-dashoffset: -140; }
 }
 
-.vm-globe { animation: vm-spin 160s linear infinite; transform-origin: center; }
 .vm-float { animation: vm-float 7s ease-in-out infinite; }
-.vm-ping { transform-box: fill-box; transform-origin: center; animation: vm-ping 3.2s ease-out infinite; }
-.vm-twinkle { animation: vm-drift 5s ease-in-out infinite; }
+.vm-ping { transform-box: fill-box; transform-origin: center; animation: vm-ping 3.4s ease-out infinite; }
+.vm-route { stroke-dasharray: 4 10; animation: vm-dash 4s linear infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .vm-globe, .vm-float, .vm-ping, .vm-twinkle { animation: none; }
+  .vm-float, .vm-ping, .vm-route { animation: none; }
 }
