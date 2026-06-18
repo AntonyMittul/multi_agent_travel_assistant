@@ -99,6 +99,9 @@ _INTAKE_PROMPT = (
     "also improve the plan — ask for the single most useful missing detail.\n"
     "If an important detail is missing or ambiguous, set ready=false and ask ONE short, "
     "friendly follow-up question. Don't interrogate — once you can make a good plan, do it.\n"
+    "For 'travelers', count the TOTAL number of people: '4 members' / 'family of 4' / "
+    "'group of 4' / '4 of us' / '4 pax' all mean 4; 'couple' / 'my partner and I' means 2; "
+    "'solo' / 'just me' means 1. Use 1 only if the number is truly unspecified.\n"
     "When ready, write a one-sentence friendly lead-in.\n"
     'Return ONLY JSON: {"ready": bool, "question": string|null, "lead": string|null, '
     '"preferences": {"origin": str|null, "destination": str|null, "budget": number|null, '

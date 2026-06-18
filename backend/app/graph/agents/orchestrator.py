@@ -74,10 +74,13 @@ def _heuristic_parse(query: str) -> Dict[str, Any]:
             currency = SYMBOL_TO_CODE.get(token.strip().lower())
 
     travelers = 1
-    m = re.search(r"(\d+)\s*(?:people|persons|travel|adult|pax|guest)", q)
+    m = (
+        re.search(r"(\d+)\s*(?:people|persons?|travell?ers?|adults?|members?|guests?|pax|ppl|of us)", q)
+        or re.search(r"(?:family|group|party)\s+of\s+(\d+)", q)
+    )
     if m:
         travelers = int(m.group(1))
-    elif "couple" in q or "two of us" in q:
+    elif "couple" in q or "two of us" in q or "my partner" in q or "my wife" in q or "my husband" in q:
         travelers = 2
 
     nights = None
