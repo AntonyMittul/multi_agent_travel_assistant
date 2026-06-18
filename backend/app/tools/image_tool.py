@@ -1,6 +1,8 @@
-"""Place photos via the Wikipedia REST API (free, no key).
+"""Place photos via the Wikipedia search API (free, no key).
 
-Returns a thumbnail image URL for a place/landmark name, or '' if none.
+Uses a full-text search (generator=search) so a query like
+"Gateway of India Mumbai" resolves to the correct article and its lead image —
+much more reliable than guessing the exact page title.
 """
 from __future__ import annotations
 
@@ -8,22 +10,36 @@ from functools import lru_cache
 
 import requests
 
-SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/{title}"
+API = "https://en.wikipedia.org/w/api.php"
 _HEADERS = {"User-Agent": "VoyageMind/1.0 (multi-agent travel assistant)"}
 
 
-@lru_cache(maxsize=256)
-def get_image(title: str) -> str:
-    if not title:
+@lru_cache(maxsize=512)
+def get_image(query: str) -> str:
+    """Return the lead image URL for the best-matching Wikipedia article, or ''."""
+    if not query:
         return ""
-    # Wikipedia titles use underscores; the API also accepts spaces.
-    name = title.split(",")[0].strip().replace(" ", "_")
     try:
-        r = requests.get(SUMMARY_URL.format(title=name), headers=_HEADERS, timeout=10)
-        if r.status_code != 200:
-            return ""
-        data = r.json()
-        # prefer the larger original image, fall back to the thumbnail
-        return (data.get("originalimage") or data.get("thumbnail") or {}).get("source", "")
+        r = requests.get(
+            API,
+            params={
+                "action": "query",
+                "generator": "search",
+                "gsrsearch": query,
+                "gsrlimit": 1,
+                "prop": "pageimages",
+                "piprop": "original|thumbnail",
+                "pithumbsize": 600,
+                "format": "json",
+            },
+            headers=_HEADERS,
+            timeout=10,
+        )
+        pages = (r.json().get("query", {}) or {}).get("pages", {})
+        for p in pages.values():
+            src = (p.get("original") or p.get("thumbnail") or {}).get("source", "")
+            if src:
+                return src
     except Exception:
         return ""
+    return ""

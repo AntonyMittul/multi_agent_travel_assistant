@@ -55,8 +55,8 @@ def destination(state: TravelState) -> Dict[str, Any]:
         },
     )
 
-    # hero photo: try the city name, then the full destination string
-    image = get_image(geo.get("city") or dest) or get_image(dest)
+    # hero photo via Wikipedia search
+    image = get_image(geo.get("city") or dest)
 
     data = {
         "name": dest,

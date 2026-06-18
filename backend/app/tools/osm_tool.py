@@ -124,7 +124,11 @@ def find_pois(lat: float, lon: float, radius_m: int = 9000, limit: int = 25) -> 
             or ("park" if tags.get("leisure") == "park" else "place")
         )
         la, lo = _coords(el)
-        pois.append({"name": name, "category": category, "lat": la, "lon": lo})
-        if len(pois) >= limit:
-            break
-    return pois
+        # famous landmarks almost always have a wikidata/wikipedia tag — use it
+        # as a popularity proxy to rank them ahead of minor POIs.
+        notable = bool(tags.get("wikidata") or tags.get("wikipedia"))
+        pois.append({"name": name, "category": category, "lat": la, "lon": lo,
+                     "notable": notable})
+
+    pois.sort(key=lambda p: not p["notable"])  # notable first
+    return pois[:limit]

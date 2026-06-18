@@ -19,19 +19,20 @@ def budget(state: TravelState) -> Dict[str, Any]:
     hotels = state.get("hotels", {})
     activities = state.get("activities", {})
 
-    flight_cost = flights.get("cheapest", {}).get("total_price", 0) if flights.get("available") else 0
-    hotel_cost = hotels.get("best_value", {}).get("total_price", 0) if hotels.get("available") else 0
     activity_cost = activities.get("estimated_cost", 0)
     food_cost = round(_FOOD_PER_DAY_USD * nights * travelers, 2)
     transport_cost = round(_LOCAL_TRANSPORT_USD * nights * travelers, 2)
 
-    breakdown = {
-        "flights": flight_cost,
-        "hotels": hotel_cost,
-        "activities": activity_cost,
-        "food": food_cost,
-        "local_transport": transport_cost,
-    }
+    # Only include flights/hotels when actually available, so we never show a
+    # misleading ₹0 line (e.g. no origin city → no flight estimate).
+    breakdown: Dict[str, float] = {}
+    if flights.get("available"):
+        breakdown["flights"] = flights.get("cheapest", {}).get("total_price", 0)
+    if hotels.get("available"):
+        breakdown["hotels"] = hotels.get("best_value", {}).get("total_price", 0)
+    breakdown["activities"] = activity_cost
+    breakdown["food"] = food_cost
+    breakdown["local_transport"] = transport_cost
     total = round(sum(breakdown.values()), 2)
     target = prefs.get("budget_usd")
     over = bool(target) and total > target
