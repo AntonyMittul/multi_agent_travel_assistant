@@ -12,9 +12,14 @@ from typing import Any, Dict, List
 
 from ...llm import llm_json
 from ...state import TravelState, event
+from ...tools.airports import haversine_km
 from ...tools.geo_tool import geocode
 from ...tools.image_tool import get_image
 from ...tools.osm_tool import find_pois, find_restaurants
+
+# discard an attraction's geocode if it lands further than this from the
+# destination centre (it matched the wrong place on the other side of the world)
+_MAX_KM_FROM_DEST = 150
 
 _PER_DAY_ACTIVITY_USD = 35  # per person per day
 _MAX_PLACES = 6             # geocoded + photographed places (bounds API calls)
@@ -110,18 +115,25 @@ def activities(state: TravelState) -> Dict[str, Any]:
     plan: List[Dict[str, Any]] = []
 
     if isinstance(result, dict) and result.get("attractions"):
+        prox = (lat, lon) if lat is not None else None
+        cc = geo.get("country_code")
         for a in result["attractions"][:_MAX_PLACES]:
             name = a.get("name") if isinstance(a, dict) else str(a)
             if not name:
                 continue
-            g = geocode(f"{name}, {dest}")  # OpenCage → coords for the map
+            # geocode biased to the destination region, and reject far matches
+            g = geocode(f"{name}, {dest}", proximity=prox, countrycode=cc)
+            plat, plon = g.get("lat"), g.get("lon")
+            if plat is not None and lat is not None and \
+                    haversine_km(lat, lon, plat, plon) > _MAX_KM_FROM_DEST:
+                plat = plon = None  # wrong place — keep it off the map
             places.append({
                 "name": name,
                 "category": a.get("category", "") if isinstance(a, dict) else "",
                 "tag": a.get("tag", "") if isinstance(a, dict) else "",
                 "icon": a.get("icon", "📍") if isinstance(a, dict) else "📍",
-                "lat": g.get("lat"),
-                "lon": g.get("lon"),
+                "lat": plat,
+                "lon": plon,
                 "image": get_image(f"{name} {city}"),
             })
         plan = result.get("plan") if isinstance(result.get("plan"), list) else []
