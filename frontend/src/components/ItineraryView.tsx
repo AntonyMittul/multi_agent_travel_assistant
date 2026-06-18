@@ -254,8 +254,8 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch {
-      alert("Sorry, the PDF export failed. Please try again.");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Sorry, the PDF export failed.");
     } finally {
       setDownloading(false);
     }

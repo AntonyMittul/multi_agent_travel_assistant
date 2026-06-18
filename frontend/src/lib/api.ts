@@ -7,7 +7,16 @@ export async function exportPdf(itinerary: Itinerary): Promise<Blob> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ itinerary }),
   });
-  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  if (!res.ok) {
+    let detail = `Export failed (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body?.detail) detail = body.detail;
+    } catch {
+      /* non-JSON error */
+    }
+    throw new Error(detail);
+  }
   return res.blob();
 }
 

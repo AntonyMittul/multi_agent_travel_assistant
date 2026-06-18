@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 from .config import (AVIATIONSTACK_API_KEY, GEMINI_MODEL, GOOGLE_API_KEY,
@@ -163,9 +163,19 @@ class ExportRequest(BaseModel):
 
 @app.post("/api/export")
 def export(req: ExportRequest):
-    from .report import build_pdf
+    try:
+        from .report import build_pdf
+    except ImportError as exc:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"PDF libraries not installed ({exc}). "
+                               f"Run: pip install -r requirements.txt and restart the server."},
+        )
+    try:
+        pdf = build_pdf(req.itinerary)
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse(status_code=500, content={"detail": f"PDF build failed: {exc}"})
 
-    pdf = build_pdf(req.itinerary)
     dest = ((req.itinerary.get("destination") or {}).get("name") or "trip").split(",")[0]
     safe = "".join(c for c in dest if c.isalnum() or c in " -_").strip().replace(" ", "_") or "trip"
     return Response(
