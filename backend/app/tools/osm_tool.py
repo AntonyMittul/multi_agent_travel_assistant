@@ -78,6 +78,34 @@ def find_hotels(lat: float, lon: float, radius_m: int = 9000, limit: int = 20) -
     return hotels
 
 
+def find_restaurants(lat: float, lon: float, radius_m: int = 7000, limit: int = 12) -> List[Dict[str, Any]]:
+    """Real restaurants/cafes near the destination (name + cuisine + coords)."""
+    if lat is None or lon is None:
+        return []
+    q = (
+        f"[out:json][timeout:30];"
+        f'(node["amenity"~"restaurant|cafe"]["name"](around:{radius_m},{lat},{lon}););'
+        f"out {limit * 3};"
+    )
+    out, seen = [], set()
+    for el in _overpass(q):
+        tags = el.get("tags", {})
+        name = tags.get("name")
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        la, lo = _coords(el)
+        out.append({
+            "name": name,
+            "cuisine": (tags.get("cuisine") or "").replace("_", " ").replace(";", ", "),
+            "lat": la,
+            "lon": lo,
+        })
+        if len(out) >= limit:
+            break
+    return out
+
+
 def find_pois(lat: float, lon: float, radius_m: int = 9000, limit: int = 25) -> List[Dict[str, Any]]:
     if lat is None or lon is None:
         return []

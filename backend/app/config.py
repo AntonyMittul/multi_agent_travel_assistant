@@ -5,10 +5,15 @@ absent, so you can add keys incrementally. The minimum for a useful run is
 OPENCAGE_API_KEY (geocoding) + GOOGLE_API_KEY (reasoning).
 """
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load backend/.env explicitly so it works regardless of the current working
+# directory (e.g. when uvicorn is launched from the repo root).
+_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(_ENV_PATH)
+load_dotenv()  # also honor a .env in the CWD, if any
 
 # ---- LLM ----
 GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "").strip()

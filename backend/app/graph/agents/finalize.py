@@ -11,23 +11,33 @@ from ...tools.fx_tool import usd_to
 
 
 def _convert_money(it: Dict[str, Any], rate: float) -> None:
-    """Multiply every USD cost field in-place by `rate` (rounded to integer)."""
+    """Multiply every USD cost field in-place by `rate` (rounded to integer).
+
+    `cheapest`/`best_value` are the SAME object as options[0]; we dedupe by id
+    so a shared option isn't converted twice (the ₹1.4M flight bug).
+    """
+    seen: set[int] = set()
+
     def cv(v):
         return round(v * rate) if isinstance(v, (int, float)) else v
 
+    def conv(opt: Dict[str, Any], fields) -> None:
+        if not isinstance(opt, dict) or id(opt) in seen:
+            return
+        seen.add(id(opt))
+        for f in fields:
+            if isinstance(opt.get(f), (int, float)):
+                opt[f] = cv(opt[f])
+
     flights = it.get("flights") or {}
     for opt in flights.get("options", []) or []:
-        opt["total_price"] = cv(opt.get("total_price"))
-    if flights.get("cheapest"):
-        flights["cheapest"]["total_price"] = cv(flights["cheapest"].get("total_price"))
+        conv(opt, ["total_price"])
+    conv(flights.get("cheapest"), ["total_price"])
 
     hotels = it.get("hotels") or {}
     for opt in hotels.get("options", []) or []:
-        opt["total_price"] = cv(opt.get("total_price"))
-        opt["nightly_rate"] = cv(opt.get("nightly_rate"))
-    if hotels.get("best_value"):
-        hotels["best_value"]["total_price"] = cv(hotels["best_value"].get("total_price"))
-        hotels["best_value"]["nightly_rate"] = cv(hotels["best_value"].get("nightly_rate"))
+        conv(opt, ["total_price", "nightly_rate"])
+    conv(hotels.get("best_value"), ["total_price", "nightly_rate"])
 
     acts = it.get("activities") or {}
     if "estimated_cost" in acts:

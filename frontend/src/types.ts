@@ -10,7 +10,15 @@ export interface AgentEvent {
 export interface HealthInfo {
   status: string;
   mode: string;
-  model: string | null;
+  gemini: { key_present: boolean; model: string; ok: boolean; error: string | null };
+  opencage: { key_present: boolean; ok: boolean; error: string | null };
+  aviationstack: { key_present: boolean };
+}
+
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content?: string;
+  itinerary?: Itinerary;
 }
 
 export interface Geo {
@@ -47,6 +55,14 @@ export interface Poi {
   category: string;
   lat?: number;
   lon?: number;
+  image?: string;
+}
+
+export interface Restaurant {
+  name: string;
+  cuisine?: string;
+  lat?: number;
+  lon?: number;
 }
 
 // Loose itinerary shape — the backend assembles every agent's slice here.
@@ -61,8 +77,7 @@ export interface Itinerary {
     highlights?: string[];
     why_chosen?: string;
     geo?: Geo;
-    population?: number;
-    region?: string;
+    image?: string;
   };
   weather?: {
     available?: boolean;
@@ -91,6 +106,7 @@ export interface Itinerary {
     estimated_cost?: number;
     plan?: { day: number; morning: string; afternoon: string; evening: string }[];
     pois?: Poi[];
+    restaurants?: Restaurant[];
   };
   logistics?: {
     available?: boolean;

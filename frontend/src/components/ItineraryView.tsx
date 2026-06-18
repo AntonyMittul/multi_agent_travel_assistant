@@ -24,23 +24,50 @@ export default function ItineraryView({ it }: { it: Itinerary }) {
   const center: [number, number] | null =
     geo?.lat != null && geo?.lon != null ? [geo.lat, geo.lon] : null;
 
+  const photoPois = (it.activities?.pois ?? []).filter((p) => p.image);
+
   return (
     <div className="space-y-4">
       {it.summary && (
-        <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="mb-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
-            {it.destination?.name ? it.destination.name : "Your itinerary"}
-            {it.logistics?.flag ? ` ${it.logistics.flag}` : ""}
-          </h2>
-          <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-            {it.summary}
-          </p>
+        <section className="overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+          {it.destination?.image && (
+            <img
+              src={it.destination.image}
+              alt={it.destination?.name ?? "destination"}
+              className="h-44 w-full object-cover"
+              loading="lazy"
+            />
+          )}
+          <div className="p-4">
+            <h2 className="mb-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              {it.destination?.name ? it.destination.name : "Your itinerary"}
+              {it.logistics?.flag ? ` ${it.logistics.flag}` : ""}
+            </h2>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+              {it.summary}
+            </p>
+          </div>
         </section>
       )}
 
       {center && (
         <Card title="Map">
           <TripMap center={center} hotels={it.hotels?.options} pois={it.activities?.pois} />
+        </Card>
+      )}
+
+      {photoPois.length > 0 && (
+        <Card title="Places you'll see">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {photoPois.slice(0, 6).map((p) => (
+              <figure key={p.name} className="overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
+                <img src={p.image} alt={p.name} className="h-28 w-full object-cover" loading="lazy" />
+                <figcaption className="truncate px-2 py-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  {p.name}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
         </Card>
       )}
 

@@ -8,6 +8,7 @@ from typing import Any, Dict
 from ...llm import llm_json
 from ...state import TravelState, event
 from ...tools.geo_tool import geocode
+from ...tools.image_tool import get_image
 
 _FALLBACK_SUGGEST = {
     "beach": "Bali, Indonesia", "hiking": "Queenstown, New Zealand",
@@ -54,10 +55,14 @@ def destination(state: TravelState) -> Dict[str, Any]:
         },
     )
 
+    # hero photo: try the city name, then the full destination string
+    image = get_image(geo.get("city") or dest) or get_image(dest)
+
     data = {
         "name": dest,
         "why_chosen": why,
         "geo": geo if geo.get("available") else {},
+        "image": image,
         **(profile if isinstance(profile, dict) else {}),
     }
     note = "" if geo.get("available") else f" ({geo.get('summary', 'geocoding unavailable')})"
